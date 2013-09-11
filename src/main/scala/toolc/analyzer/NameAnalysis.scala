@@ -1,0 +1,373 @@
+package toolc
+package analyzer
+
+import utils._
+import ast.Trees._
+import Symbols._
+
+object NameAnalysis extends Pipeline[Program, Program] {
+
+  def run(ctx: Context)(prog: Program): Program = {
+    import ctx.reporter._
+
+    var varUsage = Map[VariableSymbol,Boolean]()
+
+    def collectSymbols(prog: Program): GlobalScope = {
+
+      val global = new GlobalScope
+
+      if(prog.main.id.value.equals("Object")) {
+        error("The main object cannot be named Object.", prog.main.id)
+      }
+
+      val mcSym = new ClassSymbol(prog.main.id.value)
+      global.mainClass = mcSym
+      prog.main.setSymbol(mcSym)
+      prog.main.id.setSymbol(mcSym)
+
+      // We first create empty symbols for all classes, checking also that they
+      // are defined only once.
+      prog.classes.foreach(c => {
+        val name = c.id.value
+
+        if(name.equals(mcSym.name)) {
+          error("Class " + name + " has the same name as the main class.", c.id)
+        }
+
+        if(name.equals("Object")) {
+          error("No class can be named Object", c.id)
+        }
+
+        global.lookupClass(name) match {
+          case Some(s) => error("Class " + name + " is defined more than once. First definition here: " + s.position, c.id)
+          case None =>
+        }
+
+        val classSym = new ClassSymbol(name).setPos(c)
+        c.setSymbol(classSym)
+        c.id.setSymbol(classSym)
+        global.classes += (name -> classSym)
+      })
+
+      // We check that all parent classes are defined, and build an inheritance
+      // "graph"
+      {
+        var parents = Map[String,String]()
+
+        prog.classes.foreach { c => 
+          val cs = global.classes(c.id.value)
+
+          c.parent.foreach{ parID =>
+            val ps = global.lookupClass(parID.value)
+            ps match {
+              case None =>
+                error("Class " + cs.name + " extends class " + parID.value + " which is not defined.", parID)
+
+              case Some(p) =>
+                if(p == cs) {
+                  error("Class " + cs.name + " cannot extend itself.", c)
+                } else {
+                  cs.parent = Some(p)
+                  parID.setSymbol(p)
+                  parents += cs.name -> parID.value
+                }
+            }
+          }
+        }
+        
+        // We check that there are no cycles in the dependance graph (not that
+        // well optimized)
+        parents.keys.foreach{k =>
+          var traversed: List[String] = k :: Nil
+          var current = k
+          while(parents.isDefinedAt(current)) {
+            current = parents(current)
+            if(traversed contains current) {
+              fatal("Cyclic inheritance graph: " + (traversed.dropWhile(!current.equals(_)) ::: (current :: Nil)).mkString(" <: "))
+            }
+            traversed = traversed ::: (current :: Nil)
+          }
+        }
+      }
+      
+      // We now know that every class is unique and the inheritance graph is
+      // correct. We proceed to check the contents of these classes.
+      var done = Set[String]()
+      prog.classes.foreach(collectInClass(_))
+
+      def collectInClass(c: ClassDecl): Unit = {
+        val classSym = c.getSymbol
+        
+        if(done(classSym.name)) return
+        
+        // it is important that we analyze parent classes first
+        classSym.parent match {
+          case Some(parSym) if !done(parSym.name) =>
+            collectInClass(prog.classes.find(_.id.value.equals(parSym.name)).get)
+
+          case _ =>
+        }
+        
+        // class members
+        c.vars.foreach { varDecl =>
+          val varName = varDecl.id.value
+          
+          var foundInParent = false 
+
+          // are we overriding?
+          classSym.parent.flatMap(_.lookupVar(varName)) match {
+            case Some(s) =>
+              error(varName + " member declaration overrides previous declaration at " + s.position + ".", varDecl);
+              foundInParent = true
+
+            case None =>
+          }
+          
+          // have we defined twice?
+          if(!foundInParent) {
+            classSym.lookupVar(varName) match {
+              case Some(prev) =>
+                error(varName + " is declared more than once. First definition here: " + prev.position + ".", varDecl)
+
+              case None =>
+                val varSym = new VariableSymbol(varName).setPos(varDecl)
+                varUsage += (varSym -> false)
+                varDecl.setSymbol(varSym)
+                varDecl.id.setSymbol(varSym)
+                classSym.members += (varName -> varSym)
+            }
+          }
+        }
+        
+        c.methods.foreach(collectInMethod(_))
+        
+        def collectInMethod(m: MethodDecl): Unit = {
+          val methName = m.id.value
+          val methSym = new MethodSymbol(methName, classSym).setPos(m)
+          m.setSymbol(methSym)
+          m.id.setSymbol(methSym)
+          
+          classSym.methods.get(methName) match {
+            case Some(prev) => error(methName + " is defined more than once. First definition here: " + prev.position + ".", m)
+            case None => { classSym.lookupMethod(methName) match {
+                case Some(overridden) => {
+                  if(overridden.params.size != m.args.length) {
+                    error(methName + " overrides previous definition from " + overridden.position + " with a different number of parameters.", m)
+                  }
+                  methSym.overridden = Some(overridden)
+                  // println("Method " + methSym.name + " in " + methSym.classSymbol.name + " overrides method in class " + overridden.classSymbol.name + ".")
+                }
+                case None => ; 
+              }
+              classSym.methods += (methName -> methSym)
+            }
+          }
+          
+          m.args.foreach(formal => {
+            val parName = formal.id.value
+            methSym.params.get(parName) match {
+              case Some(varS) => error("Parameter name " + parName + " is used twice in " + methName + ".", formal.id)
+              case None => {
+                val parSym = new VariableSymbol(parName).setPos(formal.id)
+                //varUsage += (parSym -> false)
+                formal.setSymbol(parSym)
+                formal.id.setSymbol(parSym)
+                methSym.params += (parName -> parSym)
+                methSym.argList = methSym.argList ::: (parSym :: Nil)
+              }
+            }
+          })
+          
+          m.vars.foreach(varDecl => {
+            val varName = varDecl.id.value
+            methSym.params.get(varName) match {
+              case Some(parS) => error("Declaration of " + varName + " as local shadows method parameter of the same name.", varDecl)
+              case None => methSym.members.get(varName) match {
+                case Some(first) => error(varName + " is declared more than once. First declaration here: " + first.position + ".", varDecl)
+                case None => {
+                  val varSym = new VariableSymbol(varName).setPos(varDecl.id)
+                  varUsage += (varSym -> false)
+                  varDecl.id.setSymbol(varSym)
+                  varDecl.setSymbol(varSym)
+                  methSym.members += (varName -> varSym)
+                }
+              } 
+            }
+          })
+          
+          
+        }
+        
+        done += c.id.value
+      }
+      
+      global
+    }
+
+
+    def setPSymbols(prog: Program, gs: GlobalScope): Unit = {
+      // we know that the class hierarchy is ok and have set these symbols already
+      val dummyClassSym = new ClassSymbol("<noclass>")
+      val dummyMethSym = new MethodSymbol("<nomethod>", dummyClassSym)
+
+      // we still need to do them in order because of method types.
+      var checked = Set[ClassSymbol]()
+
+      while(checked.size != prog.classes.size) {
+        prog.classes.foreach((cd: ClassDecl) => {
+            val classSym = gs.lookupClass(cd.id.value).get
+
+            if(!checked.contains(classSym)) {
+              classSym.parent match {
+                case Some(ps) if(checked.contains(ps)) => {
+                  setCSymbols(cd, gs)
+                  checked += classSym
+                }
+                case None => {
+                  setCSymbols(cd, gs)
+                  checked += classSym
+                }
+                case _ => ;
+              }
+            }
+        })
+      }
+
+      prog.main.stats.foreach(s => setSSymbols(s, gs, dummyClassSym, dummyMethSym))
+    }
+
+    def setCSymbols(klass: ClassDecl, gs: GlobalScope): Unit = {
+      val classSym = gs.lookupClass(klass.id.value).get
+
+      klass.vars.foreach(varDecl => setTypeSymbol(varDecl.tpe, gs))
+      klass.vars.foreach(varDecl => varDecl.id.getSymbol match {
+        case vs: VariableSymbol => vs.setType(varDecl.tpe.getType)
+        case _ => fatal("Class member has a non-variable symbol attached.")
+      })
+      klass.methods.foreach(setMSymbols(_, gs, classSym))
+    }
+
+    def setMSymbols(meth: MethodDecl, gs: GlobalScope, cs: ClassSymbol): Unit = {
+      val methSym = cs.lookupMethod(meth.id.value).get
+
+      setTypeSymbol(meth.retType, gs)
+      methSym.setType(meth.retType.getType)
+
+      meth.args.foreach(formal => setTypeSymbol(formal.tpe, gs))
+      meth.args.foreach(formal => formal.id.getSymbol match {
+        case vs: VariableSymbol => vs.setType(formal.tpe.getType)
+        case _ => fatal("Method parameter has a non-variable symbol attached.")
+      })
+
+      meth.vars.foreach(varDecl => setTypeSymbol(varDecl.tpe, gs))
+      meth.vars.foreach(varDecl => varDecl.id.getSymbol match {
+        case vs: VariableSymbol => vs.setType(varDecl.tpe.getType)
+        case _ => fatal("Method local has a non-variable symbol attached.")
+      })
+
+      // We check whether the method is overriding another one...
+      for(pcs <- cs.parent; oms <- pcs.lookupMethod(methSym.name)) {
+        // we're supposed to have checked that before.
+        assert(oms.argList.length == meth.args.length)
+        meth.args.zip(oms.argList).foreach(formalSymPair => {
+          if(formalSymPair._1.id.getType != formalSymPair._2.getType) {
+            error("Formal type in overriding method " + methSym.name + " does not match type in overridden method.", formalSymPair._1.id)
+          }
+        })
+        if(methSym.getType != oms.getType) {
+          error("Method " + methSym.name + " overrides parent method with a different return type (" + methSym.getType + " and " + oms.getType + ")", meth.retExpr)
+        }
+      }
+
+      meth.stats.foreach(setSSymbols(_,gs,cs,methSym))
+      setESymbols(meth.retExpr, gs, cs, methSym)
+    }
+
+    def setSSymbols(stat: StatTree, gs: GlobalScope, cs: ClassSymbol, ms: MethodSymbol): Unit = stat match {
+      case Block(stats) => stats.foreach(setSSymbols(_,gs,cs,ms))
+      case If(expr, thn, elz) => {
+        setESymbols(expr,gs,cs,ms)
+        setSSymbols(thn,gs,cs,ms)
+        elz.foreach(setSSymbols(_,gs,cs,ms))
+      }
+      case While(expr, stat) => {
+        setESymbols(expr,gs,cs,ms)
+        setSSymbols(stat,gs,cs,ms)
+      }
+      case Println(expr) => setESymbols(expr,gs,cs,ms)
+      case Assign(id, expr) => {
+        setESymbols(id,gs,cs,ms)
+        setESymbols(expr,gs,cs,ms)
+      }
+      case ArrayAssign(id, index, expr) => {
+        setESymbols(id,gs,cs,ms)
+        setESymbols(index,gs,cs,ms)
+        setESymbols(expr,gs,cs,ms)
+      }
+      case Assert(expr) => {
+        setESymbols(expr,gs,cs,ms)
+      }
+    }
+
+    def setESymbols(expr: ExprTree, gs: GlobalScope, cs: ClassSymbol, ms: MethodSymbol): Unit = expr match {
+      case And(lhs, rhs) => { setESymbols(lhs,gs,cs,ms); setESymbols(rhs,gs,cs,ms) }
+      case Or(lhs, rhs) => { setESymbols(lhs,gs,cs,ms); setESymbols(rhs,gs,cs,ms) }
+      case Plus(lhs, rhs) => { setESymbols(lhs,gs,cs,ms); setESymbols(rhs,gs,cs,ms) }
+      case Minus(lhs, rhs) => { setESymbols(lhs,gs,cs,ms); setESymbols(rhs,gs,cs,ms) }
+      case Times(lhs, rhs) => { setESymbols(lhs,gs,cs,ms); setESymbols(rhs,gs,cs,ms) }
+      case Div(lhs, rhs) => { setESymbols(lhs,gs,cs,ms); setESymbols(rhs,gs,cs,ms) }
+      case LessThan(lhs, rhs) => { setESymbols(lhs,gs,cs,ms); setESymbols(rhs,gs,cs,ms) }
+      case Equals(lhs, rhs) => { setESymbols(lhs,gs,cs,ms); setESymbols(rhs,gs,cs,ms) }
+      case Not(ex) => setESymbols(ex,gs,cs,ms)
+      case ArrayRead(arr, index) => { setESymbols(arr,gs,cs,ms); setESymbols(index,gs,cs,ms) }
+      case ArrayLength(arr) => setESymbols(arr,gs,cs,ms)
+      case NewIntArray(size) => setESymbols(size,gs,cs,ms)
+      case id @ Identifier(value: String) => {
+        // in this context, it will always be an expression (variable)
+        ms.lookupVar(value) match {
+          case None => error("Undeclared identifier: " + value + ".", id)
+          case Some(sym) => {
+            id.setSymbol(sym)
+            varUsage += sym -> true
+          }
+        }
+      }
+      case t @ This() => t.setSymbol(cs)
+      case New(id @ Identifier(typeName)) => {
+        // tpe should always be a class.
+        gs.lookupClass(typeName) match {
+          case Some(s) => {
+            id.setSymbol(s)
+          }
+          case None => error("Undeclared type: " + typeName + ".", id)
+        }
+      }
+      case MethodCall(obj, meth, args) => {
+        setESymbols(obj,gs,cs,ms)
+        args.foreach(setESymbols(_,gs,cs,ms))
+      }
+
+      case _ => ;
+    }
+
+    def setTypeSymbol(tpe: TypeTree, gs: GlobalScope): Unit = tpe match {
+      case id @ Identifier(value) => gs.lookupClass(value) match {
+        case Some(s) => {
+          id.setSymbol(s)
+        }
+        case None => fatal("Undeclared type: " + value + ".", id)
+      }
+      case _ => ;
+    }
+
+    val gs = collectSymbols(prog)
+
+    terminateIfErrors
+
+    setPSymbols(prog, gs)
+
+    varUsage.filterNot(_._2).keys.foreach(k => warning("Variable " + k.name + " is declared but never used.", k))
+
+    prog
+  }
+}
