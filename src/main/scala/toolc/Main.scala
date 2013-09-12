@@ -24,7 +24,14 @@ object Main {
   def main(args: Array[String]) {
     val ctx = processOptions(args) 
 
-    val pipeline = Lexer andThen Parser andThen NameAnalysis
+    val pipeline = Lexer andThen
+                   ErrorBarrier() andThen
+                   Parser andThen
+                   ErrorBarrier() andThen
+                   NameAnalysis andThen
+                   ErrorBarrier() andThen
+                   TypeChecking andThen
+                   ErrorBarrier()
 
     val result = pipeline.run(ctx)(ctx.file)
 
