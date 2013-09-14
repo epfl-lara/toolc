@@ -30,7 +30,7 @@ object TypeChecking extends Pipeline[Program, Program] {
       val actualType: Type = expr match {
         case And(lhs, rhs) => tcExpr(lhs, TBoolean); tcExpr(rhs, TBoolean); TBoolean
         case Or(lhs, rhs) => tcExpr(lhs, TBoolean); tcExpr(rhs, TBoolean); TBoolean
-        case Plus(lhs, rhs) => {
+        case Plus(lhs, rhs) =>
           val tLeft = tcExpr(lhs, TInt, TString)
           val tRight = tcExpr(rhs, TInt, TString)
           
@@ -41,12 +41,12 @@ object TypeChecking extends Pipeline[Program, Program] {
             case (TString,TString) => TString
             case _ => TError
           }
-        }
+       
         case Minus(lhs, rhs) => tcExpr(lhs, TInt); tcExpr(rhs, TInt); TInt
         case Times(lhs, rhs) => tcExpr(lhs, TInt); tcExpr(rhs, TInt); TInt
         case Div(lhs, rhs) => tcExpr(lhs, TInt); tcExpr(rhs, TInt); TInt
         case LessThan(lhs, rhs) => tcExpr(lhs, TInt); tcExpr(rhs, TInt); TBoolean
-        case Equals(lhs, rhs) => {
+        case Equals(lhs, rhs) =>
           val tLeft = tcExpr(lhs, TInt, TBoolean, TString, TIntArray, anyObject)
           val tRight = tcExpr(rhs, TInt, TBoolean, TString, TIntArray, anyObject)
           
@@ -58,10 +58,9 @@ object TypeChecking extends Pipeline[Program, Program] {
             case (t1 @ TObject(_), t2 @ TObject(_)) /* if(t1.isSubTypeOf(t2) || t2.isSubTypeOf(t1)) */ => TBoolean
             case (t1 @ _, t2 @ _) => error("Incompatible types in equality: " + t1 + ", " + t2, expr); TError
           }
-        }
         case ArrayRead(arr, index) => tcExpr(arr, TIntArray); tcExpr(index, TInt); TInt
         case ArrayLength(arr) => tcExpr(arr, TIntArray); TInt
-        case MethodCall(obj, meth, args) => {
+        case MethodCall(obj, meth, args) =>
           // Finally we check these method calls!
           val objType = tcExpr(obj, anyObject)
           
@@ -86,39 +85,43 @@ object TypeChecking extends Pipeline[Program, Program] {
             case other @ _ => error("Method call should be applied to an object type, found: " + other, expr); TError
           }
           
-        }
         case NumLit(value) => TInt
         case StringLit(value) => TString
         case True() => TBoolean
         case False() => TBoolean
         case id @ Identifier(_) => id.getType
         case t @ This() => TObject(t.getSymbol)
-        case NewIntArray(size) => {
-	  tcExpr(size,TInt)
-	  TIntArray
-	}
-        case New(tpe) => {
+        case NewIntArray(size) =>
+          tcExpr(size,TInt)
+          TIntArray
+
+        case New(tpe) =>
           tpe.getSymbol match {
             case cs: ClassSymbol => TObject(cs)
             case _ => error("Expected: class name, found: " + tpe, tpe); TUntyped
           }
-        }
-        case Not(expr) => tcExpr(expr, TBoolean); TBoolean
+        
+        case Not(expr) =>
+          tcExpr(expr, TBoolean);
+          TBoolean
       }
 
-      expr.setType(if(exp.isEmpty) {
-        actualType
-      } else {
-        if(!exp.exists(e => actualType.isSubTypeOf(e))) {
-          if(exp.length == 1)
-            error("Type error: Expected: " + exp.toList.head + ", found: " + actualType, expr)
-          else          
-            error("Type error: Expected one of the following types: " + exp.toList.mkString(", ") + ", found: " + actualType, expr)
-          exp.head
-        } else {
+      val tpe = if(exp.isEmpty) {
           actualType
+        } else {
+          if(!exp.exists(e => actualType.isSubTypeOf(e))) {
+            if(exp.length == 1)
+              error("Type error: Expected: " + exp.toList.head + ", found: " + actualType, expr)
+            else          
+              error("Type error: Expected one of the following types: " + exp.toList.mkString(", ") + ", found: " + actualType, expr)
+            exp.head
+          } else {
+            actualType
+          }
         }
-      }).getType
+
+      expr.setType(tpe)
+      tpe
     }
     
     def tcStat(stat: StatTree): Unit = stat match {

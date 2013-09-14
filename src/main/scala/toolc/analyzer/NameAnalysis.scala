@@ -27,7 +27,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
       // We first create empty symbols for all classes, checking also that they
       // are defined only once.
-      prog.classes.foreach(c => {
+      for (c <- prog.classes) {
         val name = c.id.value
 
         if(name.equals(mcSym.name)) {
@@ -47,37 +47,33 @@ object NameAnalysis extends Pipeline[Program, Program] {
         c.setSymbol(classSym)
         c.id.setSymbol(classSym)
         global.classes += (name -> classSym)
-      })
+      }
 
       // We check that all parent classes are defined, and build an inheritance
       // "graph"
-      {
-        var parents = Map[String,String]()
+      var parents = Map[String,String]()
 
-        prog.classes.foreach { c => 
-          val cs = global.classes(c.id.value)
+      for (c <- prog.classes) {
+        val cs = global.classes(c.id.value)
 
-          c.parent.foreach{ parID =>
-            val ps = global.lookupClass(parID.value)
-            ps match {
-              case None =>
-                error("Class " + cs.name + " extends class " + parID.value + " which is not defined.", parID)
+        c.parent.foreach{ parID =>
+          global.lookupClass(parID.value) match {
+            case None =>
+              error("Class " + cs.name + " extends class " + parID.value + " which is not defined.", parID)
 
-              case Some(p) =>
-                if(p == cs) {
-                  error("Class " + cs.name + " cannot extend itself.", c)
-                } else {
-                  cs.parent = Some(p)
-                  parID.setSymbol(p)
-                  parents += cs.name -> parID.value
-                }
-            }
+            case Some(p) =>
+              if(p == cs) {
+                error("Class " + cs.name + " cannot extend itself.", c)
+              } else {
+                cs.parent = Some(p)
+                parID.setSymbol(p)
+                parents += cs.name -> parID.value
+              }
           }
         }
-        
         // We check that there are no cycles in the dependance graph (not that
         // well optimized)
-        parents.keys.foreach{k =>
+        parents.keys.foreach{ k =>
           var traversed: List[String] = k :: Nil
           var current = k
           while(parents.isDefinedAt(current)) {
@@ -89,7 +85,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
           }
         }
       }
-      
+
       // We now know that every class is unique and the inheritance graph is
       // correct. We proceed to check the contents of these classes.
       var done = Set[String]()
@@ -97,9 +93,9 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
       def collectInClass(c: ClassDecl): Unit = {
         val classSym = c.getSymbol
-        
+
         if(done(classSym.name)) return
-        
+
         // it is important that we analyze parent classes first
         classSym.parent match {
           case Some(parSym) if !done(parSym.name) =>
@@ -107,12 +103,12 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
           case _ =>
         }
-        
+
         // class members
         c.vars.foreach { varDecl =>
           val varName = varDecl.id.value
-          
-          var foundInParent = false 
+
+          var foundInParent = false
 
           // are we overriding?
           classSym.parent.flatMap(_.lookupVar(varName)) match {
@@ -122,7 +118,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
             case None =>
           }
-          
+
           // have we defined twice?
           if(!foundInParent) {
             classSym.lookupVar(varName) match {
@@ -138,69 +134,72 @@ object NameAnalysis extends Pipeline[Program, Program] {
             }
           }
         }
-        
+
         c.methods.foreach(collectInMethod(_))
-        
+
         def collectInMethod(m: MethodDecl): Unit = {
           val methName = m.id.value
           val methSym = new MethodSymbol(methName, classSym).setPos(m)
           m.setSymbol(methSym)
           m.id.setSymbol(methSym)
-          
+
           classSym.methods.get(methName) match {
-            case Some(prev) => error(methName + " is defined more than once. First definition here: " + prev.position + ".", m)
-            case None => { classSym.lookupMethod(methName) match {
-                case Some(overridden) => {
+            case Some(prev) =>
+              error(methName + " is defined more than once. First definition here: " + prev.position + ".", m)
+
+            case None =>
+              classSym.lookupMethod(methName) match {
+                case Some(overridden) =>
                   if(overridden.params.size != m.args.length) {
                     error(methName + " overrides previous definition from " + overridden.position + " with a different number of parameters.", m)
                   }
                   methSym.overridden = Some(overridden)
-                  // println("Method " + methSym.name + " in " + methSym.classSymbol.name + " overrides method in class " + overridden.classSymbol.name + ".")
-                }
-                case None => ; 
+
+                case None =>
               }
               classSym.methods += (methName -> methSym)
-            }
           }
-          
-          m.args.foreach(formal => {
+
+          for (formal <- m.args) {
             val parName = formal.id.value
             methSym.params.get(parName) match {
-              case Some(varS) => error("Parameter name " + parName + " is used twice in " + methName + ".", formal.id)
-              case None => {
+              case Some(varS) =>
+                error("Parameter name " + parName + " is used twice in " + methName + ".", formal.id)
+
+              case None =>
                 val parSym = new VariableSymbol(parName).setPos(formal.id)
-                //varUsage += (parSym -> false)
                 formal.setSymbol(parSym)
                 formal.id.setSymbol(parSym)
                 methSym.params += (parName -> parSym)
                 methSym.argList = methSym.argList ::: (parSym :: Nil)
-              }
             }
-          })
-          
-          m.vars.foreach(varDecl => {
+          }
+
+          for (varDecl <- m.vars) {
             val varName = varDecl.id.value
             methSym.params.get(varName) match {
-              case Some(parS) => error("Declaration of " + varName + " as local shadows method parameter of the same name.", varDecl)
-              case None => methSym.members.get(varName) match {
-                case Some(first) => error(varName + " is declared more than once. First declaration here: " + first.position + ".", varDecl)
-                case None => {
-                  val varSym = new VariableSymbol(varName).setPos(varDecl.id)
-                  varUsage += (varSym -> false)
-                  varDecl.id.setSymbol(varSym)
-                  varDecl.setSymbol(varSym)
-                  methSym.members += (varName -> varSym)
+              case Some(parS) =>
+                error("Declaration of " + varName + " as local shadows method parameter of the same name.", varDecl)
+
+              case None =>
+                methSym.members.get(varName) match {
+                  case Some(first) =>
+                    error(varName + " is declared more than once. First declaration here: " + first.position + ".", varDecl)
+
+                  case None =>
+                    val varSym = new VariableSymbol(varName).setPos(varDecl.id)
+                    varUsage += (varSym -> false)
+                    varDecl.id.setSymbol(varSym)
+                    varDecl.setSymbol(varSym)
+                    methSym.members += (varName -> varSym)
                 }
-              } 
             }
-          })
-          
-          
+          }
         }
-        
+
         done += c.id.value
       }
-      
+
       global
     }
 
@@ -208,29 +207,29 @@ object NameAnalysis extends Pipeline[Program, Program] {
     def setPSymbols(prog: Program, gs: GlobalScope): Unit = {
       // we know that the class hierarchy is ok and have set these symbols already
       val dummyClassSym = new ClassSymbol("<noclass>")
-      val dummyMethSym = new MethodSymbol("<nomethod>", dummyClassSym)
+      val dummyMethSym  = new MethodSymbol("<nomethod>", dummyClassSym)
 
       // we still need to do them in order because of method types.
       var checked = Set[ClassSymbol]()
 
       while(checked.size != prog.classes.size) {
-        prog.classes.foreach((cd: ClassDecl) => {
+        for (cd <- prog.classes) {
             val classSym = gs.lookupClass(cd.id.value).get
 
             if(!checked.contains(classSym)) {
               classSym.parent match {
-                case Some(ps) if(checked.contains(ps)) => {
+                case Some(ps) if(checked.contains(ps)) =>
                   setCSymbols(cd, gs)
                   checked += classSym
-                }
-                case None => {
+
+                case None =>
                   setCSymbols(cd, gs)
                   checked += classSym
-                }
-                case _ => ;
+
+                case _ =>
               }
             }
-        })
+        }
       }
 
       prog.main.stats.foreach(s => setSSymbols(s, gs, dummyClassSym, dummyMethSym))
@@ -239,11 +238,15 @@ object NameAnalysis extends Pipeline[Program, Program] {
     def setCSymbols(klass: ClassDecl, gs: GlobalScope): Unit = {
       val classSym = gs.lookupClass(klass.id.value).get
 
-      klass.vars.foreach(varDecl => setTypeSymbol(varDecl.tpe, gs))
-      klass.vars.foreach(varDecl => varDecl.id.getSymbol match {
-        case vs: VariableSymbol => vs.setType(varDecl.tpe.getType)
-        case _ => fatal("Class member has a non-variable symbol attached.")
-      })
+      for (varDecl <- klass.vars) {
+        setTypeSymbol(varDecl.tpe, gs)
+
+        varDecl.id.getSymbol match {
+          case vs: VariableSymbol => vs.setType(varDecl.tpe.getType)
+          case _ => fatal("Class member has a non-variable symbol attached.")
+        }
+      }
+
       klass.methods.foreach(setMSymbols(_, gs, classSym))
     }
 
@@ -253,27 +256,34 @@ object NameAnalysis extends Pipeline[Program, Program] {
       setTypeSymbol(meth.retType, gs)
       methSym.setType(meth.retType.getType)
 
-      meth.args.foreach(formal => setTypeSymbol(formal.tpe, gs))
-      meth.args.foreach(formal => formal.id.getSymbol match {
-        case vs: VariableSymbol => vs.setType(formal.tpe.getType)
-        case _ => fatal("Method parameter has a non-variable symbol attached.")
-      })
+      for (formal <- meth.args) {
+        setTypeSymbol(formal.tpe, gs)
 
-      meth.vars.foreach(varDecl => setTypeSymbol(varDecl.tpe, gs))
-      meth.vars.foreach(varDecl => varDecl.id.getSymbol match {
-        case vs: VariableSymbol => vs.setType(varDecl.tpe.getType)
-        case _ => fatal("Method local has a non-variable symbol attached.")
-      })
+        formal.id.getSymbol match {
+          case vs: VariableSymbol => vs.setType(formal.tpe.getType)
+          case _ => fatal("Method parameter has a non-variable symbol attached.")
+        }
+      }
+
+      for (varDecl <- meth.vars) {
+        setTypeSymbol(varDecl.tpe, gs)
+        varDecl.id.getSymbol match {
+          case vs: VariableSymbol => vs.setType(varDecl.tpe.getType)
+          case _ => fatal("Method local has a non-variable symbol attached.")
+        }
+      }
 
       // We check whether the method is overriding another one...
       for(pcs <- cs.parent; oms <- pcs.lookupMethod(methSym.name)) {
         // we're supposed to have checked that before.
         assert(oms.argList.length == meth.args.length)
-        meth.args.zip(oms.argList).foreach(formalSymPair => {
-          if(formalSymPair._1.id.getType != formalSymPair._2.getType) {
-            error("Formal type in overriding method " + methSym.name + " does not match type in overridden method.", formalSymPair._1.id)
+
+        for ((sarg, oarg) <- meth.args.zip(oms.argList)) {
+          if(sarg.id.getType != oarg.getType) {
+            error("Formal type in overriding method " + methSym.name + " does not match type in overridden method.", sarg.id)
           }
-        })
+        }
+
         if(methSym.getType != oms.getType) {
           error("Method " + methSym.name + " overrides parent method with a different return type (" + methSym.getType + " and " + oms.getType + ")", meth.retExpr)
         }
@@ -285,28 +295,27 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
     def setSSymbols(stat: StatTree, gs: GlobalScope, cs: ClassSymbol, ms: MethodSymbol): Unit = stat match {
       case Block(stats) => stats.foreach(setSSymbols(_,gs,cs,ms))
-      case If(expr, thn, elz) => {
+      case If(expr, thn, elz) =>
         setESymbols(expr,gs,cs,ms)
         setSSymbols(thn,gs,cs,ms)
         elz.foreach(setSSymbols(_,gs,cs,ms))
-      }
-      case While(expr, stat) => {
+
+      case While(expr, stat) =>
         setESymbols(expr,gs,cs,ms)
         setSSymbols(stat,gs,cs,ms)
-      }
+
       case Println(expr) => setESymbols(expr,gs,cs,ms)
-      case Assign(id, expr) => {
+      case Assign(id, expr) =>
         setESymbols(id,gs,cs,ms)
         setESymbols(expr,gs,cs,ms)
-      }
-      case ArrayAssign(id, index, expr) => {
+
+      case ArrayAssign(id, index, expr) =>
         setESymbols(id,gs,cs,ms)
         setESymbols(index,gs,cs,ms)
         setESymbols(expr,gs,cs,ms)
-      }
-      case Assert(expr) => {
+
+      case Assert(expr) =>
         setESymbols(expr,gs,cs,ms)
-      }
     }
 
     def setESymbols(expr: ExprTree, gs: GlobalScope, cs: ClassSymbol, ms: MethodSymbol): Unit = expr match {
@@ -322,7 +331,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
       case ArrayRead(arr, index) => { setESymbols(arr,gs,cs,ms); setESymbols(index,gs,cs,ms) }
       case ArrayLength(arr) => setESymbols(arr,gs,cs,ms)
       case NewIntArray(size) => setESymbols(size,gs,cs,ms)
-      case id @ Identifier(value: String) => {
+      case id @ Identifier(value: String) =>
         // in this context, it will always be an expression (variable)
         ms.lookupVar(value) match {
           case None => error("Undeclared identifier: " + value + ".", id)
@@ -331,9 +340,9 @@ object NameAnalysis extends Pipeline[Program, Program] {
             varUsage += sym -> true
           }
         }
-      }
+
       case t @ This() => t.setSymbol(cs)
-      case New(id @ Identifier(typeName)) => {
+      case New(id @ Identifier(typeName)) =>
         // tpe should always be a class.
         gs.lookupClass(typeName) match {
           case Some(s) => {
@@ -341,23 +350,23 @@ object NameAnalysis extends Pipeline[Program, Program] {
           }
           case None => error("Undeclared type: " + typeName + ".", id)
         }
-      }
-      case MethodCall(obj, meth, args) => {
+
+      case MethodCall(obj, meth, args) =>
         setESymbols(obj,gs,cs,ms)
         args.foreach(setESymbols(_,gs,cs,ms))
-      }
 
-      case _ => ;
+      case _ =>
     }
 
     def setTypeSymbol(tpe: TypeTree, gs: GlobalScope): Unit = tpe match {
       case id @ Identifier(value) => gs.lookupClass(value) match {
-        case Some(s) => {
+        case Some(s) =>
           id.setSymbol(s)
-        }
-        case None => fatal("Undeclared type: " + value + ".", id)
+
+        case None =>
+          fatal("Undeclared type: " + value + ".", id)
       }
-      case _ => ;
+      case _ =>
     }
 
     val gs = collectSymbols(prog)
@@ -366,7 +375,9 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
     setPSymbols(prog, gs)
 
-    varUsage.filterNot(_._2).keys.foreach(k => warning("Variable " + k.name + " is declared but never used.", k))
+    for ((v, used) <- varUsage if !used) {
+      warning("Variable " + v.name + " is declared but never used.", v)
+    }
 
     prog
   }

@@ -8,7 +8,7 @@ import ast._
 import analyzer._
 
 object Main {
-  
+
   def processOptions(args: Array[String]): Context = {
     val (opts, files) = args.toSeq.partition(_.startsWith("--"))
     val reporter = new Reporter()
@@ -22,16 +22,12 @@ object Main {
 
 
   def main(args: Array[String]) {
-    val ctx = processOptions(args) 
+    val ctx = processOptions(args)
 
     val pipeline = Lexer andThen
-                   ErrorBarrier() andThen
                    Parser andThen
-                   ErrorBarrier() andThen
                    NameAnalysis andThen
-                   ErrorBarrier() andThen
-                   TypeChecking andThen
-                   ErrorBarrier()
+                   TypeChecking
 
     val result = pipeline.run(ctx)(ctx.file)
 

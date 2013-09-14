@@ -61,11 +61,13 @@ object Types {
   
   case class TObject(classSymbol: ClassSymbol) extends Type {
     override def isSubTypeOf(tpe: Type): Boolean = {
-      def findInSymbol(cs1: ClassSymbol, cs2: ClassSymbol): Boolean =
-        cs1 == cs2 || (cs1.parent match {
-          case Some(p) => findInSymbol(p, cs2)
-          case None => false
-        })
+      def findInSymbol(cs1: ClassSymbol, cs2: ClassSymbol): Boolean = {
+        if (cs1 == cs2) {
+          true
+        } else {
+          cs1.parent.map(findInSymbol(_, cs2)).getOrElse(false)
+        }
+      }
       
       tpe match {
         case TObject(cs2) => cs2.name.equals("Object") || findInSymbol(classSymbol, cs2)
