@@ -6,6 +6,7 @@ import java.io.File
 import lexer._
 import ast._
 import analyzer._
+import code._
 
 object Main {
 
@@ -27,10 +28,9 @@ object Main {
     val pipeline = Lexer andThen
                    Parser andThen
                    NameAnalysis andThen
-                   TypeChecking
+                   TypeChecking andThen
+                   CodeGeneration
 
-    val result = pipeline.run(ctx)(ctx.file)
-
-    println(Printer(result))
+    pipeline.run(ctx)(ctx.file)
   }
 }
