@@ -313,9 +313,6 @@ object NameAnalysis extends Pipeline[Program, Program] {
         setESymbols(id,gs,cs,ms)
         setESymbols(index,gs,cs,ms)
         setESymbols(expr,gs,cs,ms)
-
-      case Assert(expr) =>
-        setESymbols(expr,gs,cs,ms)
     }
 
     def setESymbols(expr: ExprTree, gs: GlobalScope, cs: ClassSymbol, ms: MethodSymbol): Unit = expr match {

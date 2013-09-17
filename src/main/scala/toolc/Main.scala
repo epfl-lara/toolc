@@ -7,6 +7,7 @@ import lexer._
 import ast._
 import analyzer._
 import code._
+import eval._
 
 object Main {
 
@@ -26,11 +27,17 @@ object Main {
     val ctx = processOptions(args)
 
     val pipeline = Lexer andThen
-                   Parser andThen
-                   NameAnalysis andThen
-                   TypeChecking andThen
-                   CodeGeneration
+                   Parser
+                   //Parser andThen
+                   //NameAnalysis andThen
+                   //TypeChecking andThen
+                   //CodeGeneration
 
-    pipeline.run(ctx)(ctx.file)
+    val p = pipeline.run(ctx)(ctx.file)
+
+    val evaluator = new Evaluator(ctx, p)
+
+    evaluator.eval()
+
   }
 }

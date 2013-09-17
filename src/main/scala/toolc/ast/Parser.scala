@@ -196,15 +196,6 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         eat(SEMICOLON)
         Println(expr).setPos(pos)
       }
-      case ASSERT => {
-        val pos = currentToken
-        readToken
-        eat(LPAREN)
-        val expr = parseExpr
-        eat(RPAREN)
-        eat(SEMICOLON)
-        Assert(expr).setPos(pos)
-      }
       case IDKIND => {
         val pos = currentToken
         val id = parseIdentifier
@@ -225,7 +216,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
           expected(EQSIGN,LBRACKET)
         }
       }
-      case _ => expected(LBRACE,IF,WHILE,PRINTLN,IDKIND,ASSERT)
+      case _ => expected(LBRACE,IF,WHILE,PRINTLN,IDKIND)
     }
     
     def parseStatements: List[StatTree] = {
@@ -409,7 +400,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     
     // checks whether the current token can be the start of a statement
     def statFirst: Boolean = currentToken.kind match {
-      case LBRACE | IF | WHILE | PRINTLN | IDKIND | ASSERT => true
+      case LBRACE | IF | WHILE | PRINTLN | IDKIND => true
       case _ => false
     }
 

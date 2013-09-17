@@ -28,7 +28,6 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
     ("false" -> FALSE),
     ("this" -> THIS),
     ("new" -> NEW),
-    ("assert" -> ASSERT),
     ("println" -> PRINTLN))
 
   def run(ctx: Context)(f: File): Iterator[Token] = {

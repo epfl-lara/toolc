@@ -131,7 +131,6 @@ object TypeChecking extends Pipeline[Program, Program] {
       case Println(expr) => tcExpr(expr, TString, TInt, TBoolean)
       case Assign(id, expr) => tcExpr(expr, tcExpr(id))
       case ArrayAssign(id, index, expr) => tcExpr(id, TIntArray); tcExpr(index, TInt); tcExpr(expr, TInt)
-      case Assert(expr) => tcExpr(expr, TBoolean)
     }
 
     prog.main.stats.foreach(tcStat(_))

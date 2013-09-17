@@ -80,8 +80,6 @@ object Printer {
         case Println(expr) => "println(" + toStr(expr) + ");"
         case Assign(id, expr) => toStr(id) + " = " + toStr(expr) + ";"
         case ArrayAssign(id, index, expr) => toStr(id) + "[" + toStr(index) + "] = " + toStr(expr) + ";"
-        case Assert(expr) => "assert(" + toStr(expr) + ");"
-      
         case And(lhs, rhs) => paren(toStr(lhs) + " && " + toStr(rhs))
         case Or(lhs, rhs) => paren(toStr(lhs) + " || " + toStr(rhs))
         case Plus(lhs, rhs) => paren(toStr(lhs) + " + " + toStr(rhs))

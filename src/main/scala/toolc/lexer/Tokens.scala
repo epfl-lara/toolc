@@ -70,7 +70,6 @@ object Tokens {
   case object FALSE extends TokenKind       // false
   case object THIS extends TokenKind        // this
   case object NEW extends TokenKind         // new
-  case object ASSERT extends TokenKind      // assert
   case object PRINTLN extends TokenKind     // println
 
   // Identifiers

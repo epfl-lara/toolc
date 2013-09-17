@@ -180,7 +180,6 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           }
           case _ => sys.error("Internal error: symbol of assigned variable should have been of kind VariableSymbol.")
         }
-        case Assert(_) => ; // we don't generate code for assertions.
       }
 
       genStat(statement)
