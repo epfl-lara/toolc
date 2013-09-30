@@ -31,7 +31,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
     ("println" -> PRINTLN))
 
   def run(ctx: Context)(f: File): Iterator[Token] = {
-    val source = Source.fromFile(ctx.file)
+    val source = Source.fromFile(f)
     import ctx.reporter._
 
     // the last char seen in the input stream
@@ -43,7 +43,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
     var tokenPos: Positioned = NoPosition
 
     def currentPos(): Positioned = {
-      new Positioned{}.setPos(ctx.file, source.pos)
+      new Positioned{}.setPos(f, source.pos)
     }
 
     // a buffer to store textual information for parametric tokens

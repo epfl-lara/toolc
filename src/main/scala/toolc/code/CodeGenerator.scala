@@ -17,7 +17,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     import ctx.reporter._
 
     /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
-    def generateClassFile(shortFileName: String, gs: GlobalScope, ct: ClassDecl, dir: String): Unit = {
+    def generateClassFile(shortFileName: String, ct: ClassDecl, dir: String): Unit = {
       val cs = ct.getSymbol
       val cf = new ClassFile(cs.name, cs.parent.map(_.name))
       cf.setSourceFile(shortFileName)
@@ -82,8 +82,10 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       ch.freeze
     }
 
-    def generateMainMethodCode(ch: CodeHandler, mainStatement: StatTree, cname: String): Unit = {
-      generateStatementCode(ch,mainStatement,Map(),cname)
+    def generateMainMethodCode(ch: CodeHandler, stmts: List[StatTree], cname: String): Unit = {
+      stmts foreach {
+        stat => generateStatementCode(ch, stat, Map(), cname)
+      }
       ch << RETURN
 
       ch.freeze
@@ -364,6 +366,36 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       case TString => "Ljava/lang/String;"
       case TObject(cs) => "L"+cs.name+";"
       case _ => sys.error("Trying to get a descriptor for type: " + t)
+    }
+
+    val shortName = ctx.files.head.getName
+
+    val outDir = ctx.outDir.map(_.getPath+"/").getOrElse("./")
+
+    val f = new java.io.File(outDir)
+    if (!f.exists()) {
+      f.mkdir()
+    }
+
+    // output code
+    prog.classes foreach {
+      ct => generateClassFile(shortName, ct, outDir)
+    }
+
+    // Main class has a special handling
+    val cs = prog.main.getSymbol
+    val mainClassFile = new cafebabe.ClassFile(cs.name, None)
+    mainClassFile.setSourceFile(shortName)
+    mainClassFile.addDefaultConstructor
+
+    // Now do the main method
+    generateMainMethodCode(mainClassFile.addMainMethod.codeHandler,
+             prog.main.stats,cs.name)
+
+    try {
+      mainClassFile.writeToFile(outDir + cs.name + ".class")
+    } catch {
+      case e: Exception => fatal(e.getMessage)
     }
 
   }

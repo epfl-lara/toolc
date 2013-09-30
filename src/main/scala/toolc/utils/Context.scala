@@ -5,5 +5,9 @@ import java.io.File
 
 case class Context(
   val reporter: Reporter,
-  val file: File
+  val files: List[File] = Nil,
+  val outDir: Option[File] = None,
+  val doEval: Boolean = false,
+  val doHelp: Boolean = false,
+  val doTokens: Boolean = false
 )
