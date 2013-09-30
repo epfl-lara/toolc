@@ -91,7 +91,7 @@ object Printer {
         case ArrayRead(arr, index) => paren(toStr(arr) + "[" + toStr(index) + "]")
         case ArrayLength(arr) => paren(toStr(arr)) + ".length"
         case MethodCall(obj, meth, args) => paren(toStr(obj) + "." + toStr(meth) + "(" + args.map(toStr(_)).mkString(", ") + ")")
-        case NumLit(value) => value.toString
+        case IntLit(value) => value.toString
         case StringLit(value) => "\"" + value + "\""
         case True() => "true"
         case False() => "false"

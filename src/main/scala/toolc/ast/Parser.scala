@@ -2,7 +2,7 @@ package toolc
 package ast
 
 import utils._
-import ast.Trees._
+import Trees._
 import lexer._
 import lexer.Tokens._
 
@@ -346,7 +346,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         case Kinded(TRUE) => { val ret = True().setPos(currentToken); readToken; ret }
         case Kinded(FALSE) => { val ret = False().setPos(currentToken); readToken; ret }
         case Kinded(THIS) => { val ret = This().setPos(currentToken); readToken; ret }
-        case nl: INTLIT => { val ret = NumLit(nl.value).setPos(currentToken); readToken; ret }
+        case nl: INTLIT => { val ret = IntLit(nl.value).setPos(currentToken); readToken; ret }
         case sl: STRLIT => { val ret = StringLit(sl.value).setPos(currentToken); readToken; ret }
         case Kinded(LPAREN) => { readToken; val res = parseExpr; eat(RPAREN); res }
         case id: ID => parseIdentifier

@@ -7,3 +7,9 @@ scalaVersion := "2.10.2"
 scalacOptions += "-deprecation"
 
 scalacOptions += "-unchecked"
+
+proguardSettings
+
+ProguardKeys.options in Proguard ++= Seq("-dontnote", "-dontwarn", "-ignorewarnings", "-dontobfuscate")
+
+ProguardKeys.options in Proguard += ProguardOptions.keepMain("toolc.Main")

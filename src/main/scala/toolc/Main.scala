@@ -35,6 +35,8 @@ object Main {
 
     val p = pipeline.run(ctx)(ctx.file)
 
+    println(ASTPrinter(p))
+
     val evaluator = new Evaluator(ctx, p)
 
     evaluator.eval()

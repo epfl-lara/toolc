@@ -16,7 +16,7 @@ class CalendarImpl {
 
     def init(month : Int, year : Int) : CalendarImpl = {
         month_ = month;
-        year_ = year[2];
+        year_ = year;
         return this;
     }
 

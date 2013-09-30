@@ -289,7 +289,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
                   msym.argList.map(arg => typeToDescr(arg.getType)).mkString("(","",")") +
                   typeToDescr(meth.getSymbol.asInstanceOf[MethodSymbol].getType))
 
-        case nl @ NumLit(value) => ch << LineNumber(nl.line) << Ldc(value)
+        case nl @ IntLit(value) => ch << LineNumber(nl.line) << Ldc(value)
         case sl @ StringLit(value) => ch << LineNumber(sl.line) << Ldc(value)
         case t @ True() => ch << LineNumber(t.line) << Ldc(1)
         case f @ False() => ch << LineNumber(f.line) << Ldc(0)

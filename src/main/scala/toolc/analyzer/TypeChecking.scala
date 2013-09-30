@@ -85,7 +85,7 @@ object TypeChecking extends Pipeline[Program, Program] {
             case other @ _ => error("Method call should be applied to an object type, found: " + other, expr); TError
           }
           
-        case NumLit(value) => TInt
+        case IntLit(value) => TInt
         case StringLit(value) => TString
         case True() => TBoolean
         case False() => TBoolean

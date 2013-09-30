@@ -49,7 +49,7 @@ object Trees {
   case class ArrayRead(arr: ExprTree, index: ExprTree) extends ExprTree
   case class ArrayLength(arr: ExprTree) extends ExprTree
   case class MethodCall(obj: ExprTree, meth: Identifier, args: List[ExprTree]) extends ExprTree
-  case class NumLit(value: Int) extends ExprTree
+  case class IntLit(value: Int) extends ExprTree
   case class StringLit(value: String) extends ExprTree
 
   case class True() extends ExprTree

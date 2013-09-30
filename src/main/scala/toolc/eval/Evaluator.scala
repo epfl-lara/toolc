@@ -31,21 +31,18 @@ class Evaluator(ctx: Context, prog: Program) {
         case BoolValue(v)   => println(v)
         case IntValue(v)    => println(v)
         case StringValue(v) => println(v)
-        case _ => fatal("Unnexpected type")
+        case _ => fatal("Unnexpected type", stmt)
       }
 
     case Assign(id: Identifier, expr: ExprTree) =>
-      ectx.setValue(id.value, evalExpr(ectx, expr))
+      ectx.setVariable(id.value, evalExpr(ectx, expr))
 
     case ArrayAssign(id: Identifier, index: ExprTree, expr: ExprTree) =>
-      ectx.getValue(id.value) match {
-        case av: ArrayValue =>
-          av.setIndex(evalExpr(ectx, index).asInt, evalExpr(ectx, expr).asInt)
-        case _ =>
-          fatal("unnexpected type")
-      }
+      val av = ectx.getVariable(id.value).asArray
+      av.setIndex(evalExpr(ectx, index).asInt, evalExpr(ectx, expr).asInt)
 
-    case _ => fatal("unnexpected statement")
+    case _ =>
+      fatal("unnexpected statement", stmt)
   }
 
   def evalExpr(ectx: EvaluationContext, e: ExprTree): Value = e match {
@@ -61,7 +58,7 @@ class Evaluator(ctx: Context, prog: Program) {
         case (StringValue(lv), IntValue(rv)) =>    StringValue(lv+rv)
         case (IntValue(lv), StringValue(rv)) =>    StringValue(lv+rv)
         case (StringValue(lv), StringValue(rv)) => StringValue(lv+rv)
-        case (l,r) => fatal("Unnexpected types: "+l+"+"+r)
+        case (l,r) => fatal("Unnexpected types: "+l+"+"+r, e)
       }
 
     case Minus(lhs, rhs) =>
@@ -76,53 +73,48 @@ class Evaluator(ctx: Context, prog: Program) {
     case LessThan(lhs, rhs) =>
       BoolValue(evalExpr(ectx, lhs).asInt < evalExpr(ectx, rhs).asInt)
 
-    case NumLit(value) => IntValue(value)
+    case Not(expr) =>
+      BoolValue(!evalExpr(ectx, expr).asBool)
+
+    case IntLit(value) => IntValue(value)
     case StringLit(value) => StringValue(value)
     case True() => BoolValue(true)
     case False() => BoolValue(false)
     case Equals(lhs, rhs) =>
       val lv = evalExpr(ectx, lhs)
       val rv = evalExpr(ectx, rhs)
-
-      BoolValue(lv == rv)
+      val res = (lv, rv) match {
+        case (IntValue(l), IntValue(r)) => l == r
+        case (BoolValue(l), BoolValue(r)) => l == r
+        case (lr, rr) => lr eq rr
+      }
+      BoolValue(res)
 
     case ArrayRead(arr, index) =>
-      val a = evalExpr(ectx, arr)
-      val i = evalExpr(ectx, index).asInt
-      a match {
-        case av: ArrayValue =>
-          IntValue(av.getIndex(i))
+      val av = evalExpr(ectx, arr).asArray
+      val i  = evalExpr(ectx, index).asInt
 
-        case _ =>
-          fatal("Unnexpected value: "+a+" expected array")
-      }
+      IntValue(av.getIndex(i))
 
     case ArrayLength(arr) =>
-      val a = evalExpr(ectx, arr)
-      a match {
-        case av: ArrayValue =>
-          IntValue(av.size)
-
-        case _ =>
-          fatal("Unnexpected value: "+a+" expected array")
-      }
+      val av = evalExpr(ectx, arr).asArray
+      IntValue(av.size)
 
     case MethodCall(obj, meth, args) =>
-      val o = evalExpr(ectx, obj).asObject
+      val o  = evalExpr(ectx, obj).asObject
       val as = args.map(evalExpr(ectx, _))
 
       val nmctx = new MethodContext(o)
 
-      val klass = findClass(o.className)
-      val mdecl = findMethod(klass, meth.value)
+      val mdecl = findMethod(o.cd, meth.value)
 
       for ((f, v) <- mdecl.args zip as) {
-        nmctx.declareValue(f.id.value)
-        nmctx.setValue(f.id.value, v)
+        nmctx.declareVariable(f.id.value)
+        nmctx.setVariable(f.id.value, v)
       }
 
       for (v <- mdecl.vars) {
-        nmctx.declareValue(v.id.value)
+        nmctx.declareVariable(v.id.value)
       }
 
       mdecl.stats.foreach(evalStatement(nmctx, _))
@@ -130,63 +122,71 @@ class Evaluator(ctx: Context, prog: Program) {
       evalExpr(nmctx, mdecl.retExpr)
 
     case Identifier(name) =>
-      ectx.getValue(name)
+      ectx.getVariable(name)
 
     case New(tpe) =>
-      ObjectValue.newObject(findClass(tpe.value))
+      val cd = findClass(tpe.value)
+      val ov = ObjectValue(cd)
+
+      for (f <- fieldsOfClass(cd)) {
+        ov.declareField(f)
+      }
+
+      ov
 
     case This() =>
       ectx match {
         case mctx: MethodContext =>
           mctx.obj
         case _ =>
-          fatal("Accessing 'this' when no object context is available")
+          fatal("Accessing 'this' when no object context is available", e)
       }
 
     case NewIntArray(size) =>
       val s = evalExpr(ectx, size).asInt
 
-      new ArrayValue(Array(s), s)
-
-    case Not(expr) =>
-      BoolValue(!evalExpr(ectx, expr).asBool)
+      new ArrayValue(new Array(s), s)
   }
 
   abstract class EvaluationContext {
-    def getValue(name: String): Value
-    def setValue(name: String, v: Value): Unit
-    def declareValue(name: String): Unit
+    def getVariable(name: String): Value
+    def setVariable(name: String, v: Value): Unit
+    def declareVariable(name: String): Unit
   }
 
   class MethodContext(val obj: ObjectValue) extends EvaluationContext {
     var vars = Map[String, Option[Value]]()
 
-    def getValue(name: String): Value = {
-      vars.getOrElse(name, fatal("Unknown variable '"+name+"'"))
-        .getOrElse(fatal("Uninitialized variable '"+name+"'"))
-    }
-
-    def setValue(name: String, v: Value) {
-      if (vars.contains(name)) {
-        vars += name -> Some(v)
-      } else {
-        fatal("Unknown variable '"+name+"'")
+    def getVariable(name: String): Value = {
+      vars.get(name) match {
+        case Some(ov) =>
+          ov.getOrElse(fatal("Uninitialized variable '"+name+"'"))
+        case _ =>
+          obj.getField(name)
       }
     }
 
-    def declareValue(name: String) {
+    def setVariable(name: String, v: Value) {
+      if (vars contains name) {
+        vars += name -> Some(v)
+      } else {
+        obj.setField(name, v)
+      }
+    }
+
+    def declareVariable(name: String) {
       vars += name -> None
     }
   }
 
   class MainMethodContext extends EvaluationContext {
-    def getValue(name: String): Value = ???
-    def setValue(name: String, v: Value): Unit = ???
-    def declareValue(name: String): Unit = ???
+    def getVariable(name: String): Value          = fatal("The main method contains no variable and/or field")
+    def setVariable(name: String, v: Value): Unit = fatal("The main method contains no variable and/or field")
+    def declareVariable(name: String): Unit       = fatal("The main method contains no variable and/or field")
   }
 
-  def findMethod(klass: ClassDecl, name: String): MethodDecl = {
-    klass.methods.find(_.id.value == name).getOrElse(fatal("Unknown method "+klass.id+"."+name))
+  def findMethod(cd: ClassDecl, name: String): MethodDecl = {
+    cd.methods.find(_.id.value == name).getOrElse(fatal("Unknown method "+cd.id+"."+name))
   }
 
   def findClass(name: String): ClassDecl = {
@@ -200,11 +200,14 @@ class Evaluator(ctx: Context, prog: Program) {
 
   sealed abstract class Value {
     def asInt: Int            = fatal("Unnexpected value, found "+this+" expected Int")
+    def asString: String      = fatal("Unnexpected value, found "+this+" expected String")
     def asBool: Boolean       = fatal("Unnexpected value, found "+this+" expected Boolean")
     def asObject: ObjectValue = fatal("Unnexpected value, found "+this+" expected Object")
+    def asArray: ArrayValue   = fatal("Unnexpected value, found "+this+" expected Array")
   }
 
-  case class ObjectValue(id: Int, className: String, var fields: Map[String, Option[Value]]) extends Value {
+  case class ObjectValue(cd: ClassDecl) extends Value {
+    var fields = Map[String, Option[Value]]()
 
     def setField(name: String, v: Value) {
       if (fields contains name) {
@@ -225,24 +228,6 @@ class Evaluator(ctx: Context, prog: Program) {
     override def asObject = this
   }
 
-  object ObjectValue {
-    private var _cnt = 0;
-
-    def newObject(klass: ClassDecl): ObjectValue = {
-      _cnt += 1
-
-      val ov = ObjectValue(_cnt, klass.id.value, Map())
-
-      for (f <- fieldsOfClass(klass)) {
-        ov.declareField(f)
-      }
-
-      ov
-    }
-  }
-
-  case class StringValue(var v: String) extends Value
-
   case class ArrayValue(var entries: Array[Int], val size: Int) extends Value {
     def setIndex(i: Int, v: Int) {
       if (i >= size || i < 0) {
@@ -257,6 +242,12 @@ class Evaluator(ctx: Context, prog: Program) {
       }
       entries(i)
     }
+
+    override def asArray = this
+  }
+
+  case class StringValue(var v: String) extends Value {
+    override def asString = v
   }
 
   case class IntValue(var v: Int) extends Value {
