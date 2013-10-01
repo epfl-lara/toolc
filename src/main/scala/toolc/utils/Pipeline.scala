@@ -14,3 +14,7 @@ abstract class Pipeline[-F, +T] {
 
   def run(ctx: Context)(v: F): T
 }
+
+case class Noop[T]() extends Pipeline[T, T] {
+  def run(ctx: Context)(v: T) = v
+}

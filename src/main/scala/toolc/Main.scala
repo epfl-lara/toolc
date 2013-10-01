@@ -66,16 +66,21 @@ object Main {
   def main(args: Array[String]) {
     val ctx = processOptions(args)
 
-    val pipeline = if (ctx.doEval) {
+    val pipeline = {
       Lexer andThen
-      Parser andThen
-      Evaluation
-    } else {
-      Lexer andThen
+      (if (ctx.doTokens) {
+        DisplayTokens
+      } else {
+        Noop()
+      }) andThen
       Parser andThen
       NameAnalysis andThen
       TypeChecking andThen
-      CodeGeneration
+      (if (ctx.doEval) {
+        Evaluation
+      } else {
+        CodeGeneration
+      })
     }
 
     pipeline.run(ctx)(ctx.files.head)

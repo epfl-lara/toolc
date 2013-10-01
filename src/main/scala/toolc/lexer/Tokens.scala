@@ -23,6 +23,11 @@ object Tokens {
     override def toString = "identifier"
   }
 
+  // This allows you to do:
+  // myToken match {
+  //   case Kinded(IDKIND) => 
+  //  ...
+  // }
   object Kinded {
     def unapply(t: Token): Option[TokenKind] = {
       Some(t.kind)

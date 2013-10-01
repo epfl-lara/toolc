@@ -186,7 +186,9 @@ class Evaluator(ctx: Context, prog: Program) {
   }
 
   def findMethod(cd: ClassDecl, name: String): MethodDecl = {
-    cd.methods.find(_.id.value == name).getOrElse(fatal("Unknown method "+cd.id+"."+name))
+    cd.methods.find(_.id.value == name).orElse(
+      cd.parent.map(p => findMethod(findClass(p.value), name))
+    ).getOrElse(fatal("Unknown method "+cd.id+"."+name))
   }
 
   def findClass(name: String): ClassDecl = {

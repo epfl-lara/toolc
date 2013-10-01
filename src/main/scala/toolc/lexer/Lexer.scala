@@ -219,3 +219,19 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
     }
   }
 }
+
+object DisplayTokens extends Pipeline[Iterator[Token], Iterator[Token]] {
+  def run(ctx: Context)(tokens: Iterator[Token]): Iterator[Token] = {
+    new Iterator[Token] {
+      def hasNext = {
+        tokens.hasNext
+      }
+
+      def next = {
+        val n = tokens.next
+        print(n+"("+n.line+":"+n.col+") ")
+        n
+      }
+    }
+  }
+}
