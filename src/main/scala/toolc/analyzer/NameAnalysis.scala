@@ -205,10 +205,6 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
 
     def setPSymbols(prog: Program, gs: GlobalScope): Unit = {
-      // we know that the class hierarchy is ok and have set these symbols already
-      val dummyClassSym = new ClassSymbol("<noclass>")
-      val dummyMethSym  = new MethodSymbol("<nomethod>", dummyClassSym)
-
       // we still need to do them in order because of method types.
       var checked = Set[ClassSymbol]()
 
@@ -232,7 +228,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
         }
       }
 
-      prog.main.stats.foreach(s => setSSymbols(s, gs, dummyClassSym, dummyMethSym))
+      prog.main.stats.foreach(s => setSSymbols(s, gs, None))
     }
 
     def setCSymbols(klass: ClassDecl, gs: GlobalScope): Unit = {
@@ -289,48 +285,48 @@ object NameAnalysis extends Pipeline[Program, Program] {
         }
       }
 
-      meth.stats.foreach(setSSymbols(_,gs,cs,methSym))
-      setESymbols(meth.retExpr, gs, cs, methSym)
+      meth.stats.foreach(setSSymbols(_,gs,Some(methSym)))
+      setESymbols(meth.retExpr, gs, Some(methSym))
     }
 
-    def setSSymbols(stat: StatTree, gs: GlobalScope, cs: ClassSymbol, ms: MethodSymbol): Unit = stat match {
-      case Block(stats) => stats.foreach(setSSymbols(_,gs,cs,ms))
+    def setSSymbols(stat: StatTree, gs: GlobalScope, ms: Option[MethodSymbol]): Unit = stat match {
+      case Block(stats) => stats.foreach(setSSymbols(_,gs,ms))
       case If(expr, thn, elz) =>
-        setESymbols(expr,gs,cs,ms)
-        setSSymbols(thn,gs,cs,ms)
-        elz.foreach(setSSymbols(_,gs,cs,ms))
+        setESymbols(expr,gs,ms)
+        setSSymbols(thn,gs,ms)
+        elz.foreach(setSSymbols(_,gs,ms))
 
       case While(expr, stat) =>
-        setESymbols(expr,gs,cs,ms)
-        setSSymbols(stat,gs,cs,ms)
+        setESymbols(expr,gs,ms)
+        setSSymbols(stat,gs,ms)
 
-      case Println(expr) => setESymbols(expr,gs,cs,ms)
+      case Println(expr) => setESymbols(expr,gs,ms)
       case Assign(id, expr) =>
-        setESymbols(id,gs,cs,ms)
-        setESymbols(expr,gs,cs,ms)
+        setESymbols(id,gs,ms)
+        setESymbols(expr,gs,ms)
 
       case ArrayAssign(id, index, expr) =>
-        setESymbols(id,gs,cs,ms)
-        setESymbols(index,gs,cs,ms)
-        setESymbols(expr,gs,cs,ms)
+        setESymbols(id,gs,ms)
+        setESymbols(index,gs,ms)
+        setESymbols(expr,gs,ms)
     }
 
-    def setESymbols(expr: ExprTree, gs: GlobalScope, cs: ClassSymbol, ms: MethodSymbol): Unit = expr match {
-      case And(lhs, rhs) => { setESymbols(lhs,gs,cs,ms); setESymbols(rhs,gs,cs,ms) }
-      case Or(lhs, rhs) => { setESymbols(lhs,gs,cs,ms); setESymbols(rhs,gs,cs,ms) }
-      case Plus(lhs, rhs) => { setESymbols(lhs,gs,cs,ms); setESymbols(rhs,gs,cs,ms) }
-      case Minus(lhs, rhs) => { setESymbols(lhs,gs,cs,ms); setESymbols(rhs,gs,cs,ms) }
-      case Times(lhs, rhs) => { setESymbols(lhs,gs,cs,ms); setESymbols(rhs,gs,cs,ms) }
-      case Div(lhs, rhs) => { setESymbols(lhs,gs,cs,ms); setESymbols(rhs,gs,cs,ms) }
-      case LessThan(lhs, rhs) => { setESymbols(lhs,gs,cs,ms); setESymbols(rhs,gs,cs,ms) }
-      case Equals(lhs, rhs) => { setESymbols(lhs,gs,cs,ms); setESymbols(rhs,gs,cs,ms) }
-      case Not(ex) => setESymbols(ex,gs,cs,ms)
-      case ArrayRead(arr, index) => { setESymbols(arr,gs,cs,ms); setESymbols(index,gs,cs,ms) }
-      case ArrayLength(arr) => setESymbols(arr,gs,cs,ms)
-      case NewIntArray(size) => setESymbols(size,gs,cs,ms)
+    def setESymbols(expr: ExprTree, gs: GlobalScope, ms: Option[MethodSymbol]): Unit = expr match {
+      case And(lhs, rhs) => { setESymbols(lhs,gs,ms); setESymbols(rhs,gs,ms) }
+      case Or(lhs, rhs) => { setESymbols(lhs,gs,ms); setESymbols(rhs,gs,ms) }
+      case Plus(lhs, rhs) => { setESymbols(lhs,gs,ms); setESymbols(rhs,gs,ms) }
+      case Minus(lhs, rhs) => { setESymbols(lhs,gs,ms); setESymbols(rhs,gs,ms) }
+      case Times(lhs, rhs) => { setESymbols(lhs,gs,ms); setESymbols(rhs,gs,ms) }
+      case Div(lhs, rhs) => { setESymbols(lhs,gs,ms); setESymbols(rhs,gs,ms) }
+      case LessThan(lhs, rhs) => { setESymbols(lhs,gs,ms); setESymbols(rhs,gs,ms) }
+      case Equals(lhs, rhs) => { setESymbols(lhs,gs,ms); setESymbols(rhs,gs,ms) }
+      case Not(ex) => setESymbols(ex,gs,ms)
+      case ArrayRead(arr, index) => { setESymbols(arr,gs,ms); setESymbols(index,gs,ms) }
+      case ArrayLength(arr) => setESymbols(arr,gs,ms)
+      case NewIntArray(size) => setESymbols(size,gs,ms)
       case id @ Identifier(value: String) =>
         // in this context, it will always be an expression (variable)
-        ms.lookupVar(value) match {
+        ms.flatMap(_.lookupVar(value)) match {
           case None => error("Undeclared identifier: " + value + ".", id)
           case Some(sym) => {
             id.setSymbol(sym)
@@ -338,7 +334,14 @@ object NameAnalysis extends Pipeline[Program, Program] {
           }
         }
 
-      case t @ This() => t.setSymbol(cs)
+      case t @ This() =>
+        ms.map(_.classSymbol) match {
+          case Some(cs) =>
+            t.setSymbol(cs)
+          case None =>
+            error("Cannot use 'this' in the main method", t)
+        }
+
       case New(id @ Identifier(typeName)) =>
         // tpe should always be a class.
         gs.lookupClass(typeName) match {
@@ -349,8 +352,8 @@ object NameAnalysis extends Pipeline[Program, Program] {
         }
 
       case MethodCall(obj, meth, args) =>
-        setESymbols(obj,gs,cs,ms)
-        args.foreach(setESymbols(_,gs,cs,ms))
+        setESymbols(obj,gs,ms)
+        args.foreach(setESymbols(_,gs,ms))
 
       case _ =>
     }

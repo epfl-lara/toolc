@@ -21,6 +21,10 @@ object Main {
         ctx = ctx.copy(doHelp = true)
         processOption(args)
 
+      case "--main" :: args =>
+        ctx = ctx.copy(doPrintMain = true)
+        processOption(args)
+
       case "--eval" :: args =>
         ctx = ctx.copy(doEval = true)
         processOption(args)
@@ -56,10 +60,11 @@ object Main {
   def displayHelp() {
     println("Usage: ./toolc [options] <file>")
     println("Options include:")
-    println(" --help        display this help")
-    println(" --tokens      display the list of tokens")
+    println(" --help        displays this help")
+    println(" --tokens      displays the list of tokens")
     println(" --eval        evaluate the program directly instead of generating code")
-    println(" -d <outdir>   generate class files in the specified directory")
+    println(" --main        displays the name of the main object anx exits")
+    println(" -d <outdir>   generates class files in the specified directory")
   }
 
 
@@ -68,19 +73,23 @@ object Main {
 
     val pipeline = {
       Lexer andThen
-      (if (ctx.doTokens) {
-        DisplayTokens
-      } else {
-        Noop()
-      }) andThen
+        (if (ctx.doTokens) {
+          DisplayTokens
+        } else {
+          Noop()
+        }) andThen
       Parser andThen
-      NameAnalysis andThen
-      TypeChecking andThen
-      (if (ctx.doEval) {
-        Evaluation
-      } else {
-        CodeGeneration
-      })
+        (if (ctx.doPrintMain) {
+          DisplayMain
+        } else {
+          NameAnalysis andThen
+          TypeChecking andThen
+          (if (ctx.doEval) {
+            Evaluation
+          } else {
+            CodeGeneration
+          })
+        })
     }
 
     pipeline.run(ctx)(ctx.files.head)
