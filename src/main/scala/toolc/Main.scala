@@ -37,7 +37,7 @@ object Main {
         ctx = ctx.copy(outDir = Some(new File(out)))
         processOption(args)
 
-      case f ::args =>
+      case f :: args =>
         ctx = ctx.copy(files = new File(f) :: ctx.files)
         processOption(args)
 
@@ -50,6 +50,7 @@ object Main {
       displayHelp()
       sys.exit(0)
     }
+
     if (ctx.files.size != 1) {
       reporter.fatal("Exactly one file expected, "+ctx.files.size+" file(s) given.")
     }

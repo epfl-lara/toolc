@@ -35,9 +35,9 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
     import ctx.reporter._
 
     // the last char seen in the input stream
-    var currentChar: Char = '\0'
+    var currentChar: Char = '\u0000'
     /** Used to detect \r\n pairs and ouput only \n for them. */
-    var previousChar: Char = '\0'
+    var previousChar: Char = '\u0000'
 
     // the position of the beginning of the current token
     var tokenPos: Positioned = NoPosition

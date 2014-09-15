@@ -43,7 +43,9 @@ object Printer {
           str = str + ident + "}"
           str
 
-        case VarDecl(tpe, id) => "var " + toStr(id) + " : " + toStr(tpe) + ";"
+        case Formal(tpe, id) => toStr(id) + ": " + toStr(tpe)
+
+        case VarDecl(tpe, id) => "var " + toStr(id) + ": " + toStr(tpe) + ";"
 
         case MethodDecl(retType, id, args, vars, stats, retExpr) =>
           var str = "def " + toStr(id) + "(" + args.map(f => { toStr(f.id) + " : " + toStr(f.tpe) }).mkString(", ") + ") : " + toStr(retType) + " = {\n"
