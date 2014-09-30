@@ -229,7 +229,7 @@ object DisplayTokens extends Pipeline[Iterator[Token], Iterator[Token]] {
 
       def next = {
         val n = tokens.next
-        print(n+"("+n.line+":"+n.col+") ")
+        println(n+"("+n.line+":"+n.col+") ")
         n
       }
     }
