@@ -72,13 +72,10 @@ object Main {
   def main(args: Array[String]) {
     val ctx = processOptions(args)
 
-    val pipeline = {
-      Lexer andThen
-        (if (ctx.doTokens) {
-          DisplayTokens
-        } else {
-          Noop()
-        }) andThen
+    val pipeline = if (ctx.doTokens) {
+      Lexer andThen DisplayTokens
+    } else {
+      Lexer  andThen
       Parser andThen
         (if (ctx.doPrintMain) {
           DisplayMain

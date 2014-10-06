@@ -222,16 +222,9 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
 
 object DisplayTokens extends Pipeline[Iterator[Token], Iterator[Token]] {
   def run(ctx: Context)(tokens: Iterator[Token]): Iterator[Token] = {
-    new Iterator[Token] {
-      def hasNext = {
-        tokens.hasNext
-      }
 
-      def next = {
-        val n = tokens.next
-        println(n+"("+n.line+":"+n.col+") ")
-        n
-      }
-    }
+    val it2 = tokens.map { t => println(s"$t(${t.line}:${t.col})"); t }
+
+    it2.toList.iterator
   }
 }
