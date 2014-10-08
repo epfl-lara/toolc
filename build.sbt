@@ -1,6 +1,6 @@
 name := "toolc"
 
-version := "2.5"
+version := "2.6"
 
 scalaVersion := "2.11.2"
 
