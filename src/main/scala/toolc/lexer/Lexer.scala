@@ -84,6 +84,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
           } else if(currentChar == '*') {
             // skips block comments
             var foundEnd: Boolean = false
+            nextChar
             while(!foundEnd) {
               while(currentChar != '*') {
                 if(currentChar == EndOfFile) fatal("unterminated block comment", currentPos())

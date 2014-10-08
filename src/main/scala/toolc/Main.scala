@@ -91,5 +91,7 @@ object Main {
     }
 
     pipeline.run(ctx)(ctx.files.head)
+
+    ctx.reporter.terminateIfErrors
   }
 }
