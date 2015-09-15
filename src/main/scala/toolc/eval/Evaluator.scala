@@ -201,11 +201,11 @@ class Evaluator(ctx: Context, prog: Program) {
   }
 
   sealed abstract class Value {
-    def asInt: Int            = fatal("Unnexpected value, found "+this+" expected Int")
-    def asString: String      = fatal("Unnexpected value, found "+this+" expected String")
-    def asBool: Boolean       = fatal("Unnexpected value, found "+this+" expected Boolean")
-    def asObject: ObjectValue = fatal("Unnexpected value, found "+this+" expected Object")
-    def asArray: ArrayValue   = fatal("Unnexpected value, found "+this+" expected Array")
+    def asInt: Int            = fatal("Unexpected value, found "+this+" expected Int")
+    def asString: String      = fatal("Unexpected value, found "+this+" expected String")
+    def asBool: Boolean       = fatal("Unexpected value, found "+this+" expected Boolean")
+    def asObject: ObjectValue = fatal("Unexpected value, found "+this+" expected Object")
+    def asArray: ArrayValue   = fatal("Unexpected value, found "+this+" expected Array")
   }
 
   case class ObjectValue(cd: ClassDecl) extends Value {
