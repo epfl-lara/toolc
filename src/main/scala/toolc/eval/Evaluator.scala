@@ -31,7 +31,7 @@ class Evaluator(ctx: Context, prog: Program) {
         case BoolValue(v)   => println(v)
         case IntValue(v)    => println(v)
         case StringValue(v) => println(v)
-        case _ => fatal("Unnexpected type", stmt)
+        case _ => fatal("Unexpected type", stmt)
       }
 
     case Assign(id: Identifier, expr: ExprTree) =>
