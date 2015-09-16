@@ -1,5 +1,9 @@
 name := "toolc"
 
+mainClass in (Compile, run) := Some("toolc.Main")
+
+mainClass in (Compile, packageBin) := Some("toolc.Main")
+
 version := "2.7"
 
 scalaVersion := "2.11.7"
