@@ -6,105 +6,191 @@ import Trees._
 object Printer {
   def apply(t: Tree): String = {
     var _ident: Int = 0
+    val sb = new StringBuffer()
+    def app(s: String) = sb append s
+    def line(s: String) = {
+      sb append ident
+      sb append s
+      sb append "\n"
+    }
+    def nl() = sb append "\n"
+    def ident: String = "  " * _ident
+    def paren(body: => Unit): Unit = {
+      app("(")
+      body
+      app(")")
+    }
 
-    def incIdent = { _ident = _ident + 1 }
-    def decIdent = { _ident = _ident - 1 }
-    def ident: String = (0 to _ident).toList.tail.map(s => "  ").mkString("")
-    def paren(str: String): String = "(" + str + ")"
+    def indented(body: => Unit) = {
+      _ident += 1
+      body
+      _ident -= 1
+    }
 
-    def toStr(t: Tree): String = {
+    def binOp(lhs: Tree, op: String, rhs: Tree) = {
+      paren {
+        toStr(lhs)
+        app(s" $op ")
+        toStr(rhs)
+      }
+    }
+
+    def toStr(t: Tree): Unit = {
       t match {
-        case Program(mainObject, classes) => toStr(mainObject) + "\n\n" + classes.map(toStr(_)).mkString("\n\n")
+        case Program(mainObject, classes) =>
+          toStr(mainObject)
+          nl()
+          nl()
+          classes foreach { cl => toStr(cl); nl() }
         case MainObject(id, stats) =>
-          var str = ident + "object " + toStr(id) + " {\n"
-          incIdent
-          str = str + ident + "def main() : Unit = {\n"
-          incIdent
-          str = str + ident + stats.map(toStr(_)).mkString("\n"+ident) + "\n"
-          decIdent
-          str = str + "\n" + ident + "}\n"
-          decIdent
-          str = str + ident + "}"
-          str
+          line(s"object $id {")
+          indented {
+            line("def main(): Unit = {")
+            indented {
+              stats foreach { st => toStr(st); nl() }
+            }
+            nl()
+            line("}")
+          }
+          line("}")
 
         case ClassDecl(id, parent, vars, methods) =>
-          var str = ident + "class " + toStr(id) + " "
-          parent match {
-            case Some(idp) => str = str + "extends " + toStr(idp) + " "
-            case None => ;
+          val optP = parent match {
+            case Some(idp) => s" extends $idp"
+            case None => ""
           }
-          str = str + "{\n"
-          incIdent
-          if(!vars.isEmpty)
-            str = str + ident + vars.map(toStr(_)).mkString("\n"+ident) + "\n"
-          if(!methods.isEmpty)
-            str = str + ident + methods.map(toStr(_)).mkString("\n"+ident) + "\n"
-          decIdent
-          str = str + ident + "}"
-          str
+          line(s"class $id$optP {")
+          indented {
+            vars map { v => toStr(v); nl() }
+            nl()
+            methods map { m => toStr(m); nl() }
+          }
+          line("}")
 
-        case Formal(tpe, id) => toStr(id) + ": " + toStr(tpe)
+        case Formal(tpe, id) =>
+          toStr(id); app(": "); toStr(tpe)
 
-        case VarDecl(tpe, id) => "var " + toStr(id) + ": " + toStr(tpe) + ";"
+        case VarDecl(tpe, id) =>
+          app(s"var $id: "); toStr(tpe); app(";")
 
         case MethodDecl(retType, id, args, vars, stats, retExpr) =>
-          var str = "def " + toStr(id) + "(" + args.map(f => { toStr(f.id) + " : " + toStr(f.tpe) }).mkString(", ") + ") : " + toStr(retType) + " = {\n"
-          incIdent
-          str = str + ident + vars.map(toStr(_)).mkString("\n"+ident) + "\n"
-          str = str + ident + stats.map(toStr(_)).mkString("\n"+ident) + "\n"
-          str = str + ident + "return " + toStr(retExpr) + ";\n"
-          decIdent
-          str = str + ident + "}"
-          str
+          app(s"def $id(")
+          if (args.nonEmpty) {
+            args.init foreach { arg => toStr(arg); app(", ") }
+            toStr(args.last)
+          }
+          app("): ")
+          toStr(retType)
+          app(" = {\n")
+          indented{
+            vars foreach {v => toStr(v); nl()}
+            nl()
+            stats foreach {s => toStr(s); nl()}
+            app("return ")
+            toStr(retExpr)
+            nl()
+          }
 
-        case IntArrayType() => "Int[]"
-        case IntType() => "Int"
-        case BooleanType() => "Bool"
-        case StringType() => "String"
-        
-        case Block(lst) => {
-          val i2 = ident
-          incIdent
-          val i = ident
-          val ret = "{\n" + i + lst.map(toStr(_)).mkString("\n" + i) + "\n" + i2 + "}"
-          decIdent
-          ret
-        }
-        
-        case While(expr, stat) => "while (" + toStr(expr) + ") " + toStr(stat)
-        
+        case IntArrayType() => app("Int[]")
+        case IntType()      => app("Int")
+        case BooleanType()  => app("Bool")
+        case StringType()   => app("String")
+
+        case Block(stats) =>
+          app("{\n")
+          indented {
+            stats foreach {s => toStr(s); nl()}
+          }
+          line("}")
+
+        case While(expr, stat) =>
+          app("while (")
+          toStr(expr)
+          app(") ")
+          toStr(stat)
+
         case If(cond, thn, Some(els)) =>
-          "if (" + toStr(cond) + ") " + toStr(thn) + " else " + toStr(els)
+          app("if (")
+          toStr(cond)
+          app(") ")
+          toStr(thn)
+          app(" else ")
+          toStr(els)
 
         case If(cond, thn, None) =>
-          "if (" + toStr(cond) + ") " + toStr(thn)
-        
-        case Println(expr) => "println(" + toStr(expr) + ");"
-        case Assign(id, expr) => toStr(id) + " = " + toStr(expr) + ";"
-        case ArrayAssign(id, index, expr) => toStr(id) + "[" + toStr(index) + "] = " + toStr(expr) + ";"
-        case And(lhs, rhs) => paren(toStr(lhs) + " && " + toStr(rhs))
-        case Or(lhs, rhs) => paren(toStr(lhs) + " || " + toStr(rhs))
-        case Plus(lhs, rhs) => paren(toStr(lhs) + " + " + toStr(rhs))
-        case Minus(lhs, rhs) => paren(toStr(lhs) + " - " + toStr(rhs))
-        case Times(lhs, rhs) => paren(toStr(lhs) + " * " + toStr(rhs))
-        case Div(lhs, rhs) => paren(toStr(lhs) + " / " + toStr(rhs))
-        case LessThan(lhs, rhs) => paren(toStr(lhs) + " < " + toStr(rhs))
-        case Equals(lhs, rhs) => paren(toStr(lhs) + " == " + toStr(rhs))
-        case ArrayRead(arr, index) => paren(toStr(arr) + "[" + toStr(index) + "]")
-        case ArrayLength(arr) => paren(toStr(arr)) + ".length"
-        case MethodCall(obj, meth, args) => paren(toStr(obj) + "." + toStr(meth) + "(" + args.map(toStr(_)).mkString(", ") + ")")
-        case IntLit(value) => value.toString
-        case StringLit(value) => "\"" + value + "\""
-        case True() => "true"
-        case False() => "false"
-        case id @ Identifier(value) => value
-        case This() => "this"
-        case NewIntArray(size) => "new Int[" + toStr(size) + "]"
-        case New(tpe) => "new " + toStr(tpe) + "()"
-        case Not(expr) => "!" + paren(toStr(expr))
+          app("if (")
+          toStr(cond)
+          app(") ")
+          toStr(thn)
+
+        case Println(expr) =>
+          app("println(")
+          toStr(expr)
+          app(");")
+        case Assign(id, expr) =>
+          toStr(id)
+          app(" = ")
+          toStr(expr)
+          app(";")
+        case ArrayAssign(id, index, expr) =>
+          toStr(id)
+          app("[")
+          toStr(index)
+          app("] = ")
+          toStr(expr)
+          app(";")
+        case And(lhs, rhs)      => binOp(lhs, "&&", rhs)
+        case Or(lhs, rhs)       => binOp(lhs, "||", rhs)
+        case Plus(lhs, rhs)     => binOp(lhs, "+", rhs)
+        case Minus(lhs, rhs)    => binOp(lhs, "-", rhs)
+        case Times(lhs, rhs)    => binOp(lhs, "*", rhs)
+        case Div(lhs, rhs)      => binOp(lhs, "/", rhs)
+        case LessThan(lhs, rhs) => binOp(lhs, "<", rhs)
+        case Equals(lhs, rhs)   => binOp(lhs, "==", rhs)
+
+        case ArrayRead(arr, index) => paren {
+          toStr(arr)
+          app("[")
+          toStr(index)
+          app("]")
+        }
+        case ArrayLength(arr) =>
+          paren(toStr(arr))
+          app(".length")
+        case MethodCall(obj, meth, args) =>
+          toStr(obj)
+          app(".")
+          toStr(meth)
+          app("(")
+          if (args.nonEmpty) {
+            args.init.foreach { arg =>
+              toStr(arg)
+              app(", ")
+            }
+            toStr(args.last)
+          }
+          app(")")
+        case IntLit(value) => app(value.toString)
+        case StringLit(value) => app("\"" + value + "\"")
+        case True() => app("true")
+        case False() => app("false")
+        case id@Identifier(value) => app(value)
+        case This() => app("this")
+        case NewIntArray(size) =>
+          app("new Int[")
+          toStr(size)
+          app("]")
+        case New(tpe) =>
+          app("new ")
+          toStr(tpe)
+          app("()")
+        case Not(expr) =>
+          app("!")
+          paren(toStr(expr))
       }
     }
 
     toStr(t)
+    sb.toString
   }
 }

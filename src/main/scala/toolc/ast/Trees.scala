@@ -66,6 +66,7 @@ object Trees {
         vs.getType
     }
     override def setType(tpe: Type) = this
+    override def toString = value
   }
   case class This() extends ExprTree with Symbolic[ClassSymbol]
   case class NewIntArray(size: ExprTree) extends ExprTree
