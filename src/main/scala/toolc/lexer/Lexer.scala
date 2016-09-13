@@ -9,113 +9,116 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
   import Tokens._
 
   val keywords = Map[String, TokenKind](
-    ("object" -> OBJECT),
-    ("class" -> CLASS),
-    ("def" -> DEF),
-    ("var" -> VAR),
-    ("Unit" -> UNIT),
-    ("main" -> MAIN),
-    ("String" -> STRING),
-    ("extends" -> EXTENDS),
-    ("Int" -> INT),
-    ("Bool" -> BOOLEAN),
-    ("while" -> WHILE),
-    ("if" -> IF),
-    ("else" -> ELSE),
-    ("return" -> RETURN),
-    ("length" -> LENGTH),
-    ("true" -> TRUE),
-    ("false" -> FALSE),
-    ("this" -> THIS),
-    ("new" -> NEW),
-    ("println" -> PRINTLN))
+    "object"  -> OBJECT,
+    "class"   -> CLASS,
+    "def"     -> DEF,
+    "var"     -> VAR,
+    "Unit"    -> UNIT,
+    "main"    -> MAIN,
+    "String"  -> STRING,
+    "extends" -> EXTENDS,
+    "Int"     -> INT,
+    "Bool"    -> BOOLEAN,
+    "while"   -> WHILE,
+    "if"      -> IF,
+    "else"    -> ELSE,
+    "return"  -> RETURN,
+    "length"  -> LENGTH,
+    "true"    -> TRUE,
+    "false"   -> FALSE,
+    "this"    -> THIS,
+    "new"     -> NEW,
+    "println" -> PRINTLN
+  )
 
-  def run(ctx: Context)(f: File): Iterator[Token] = {
-    val source = Source.fromFile(f)
-    import ctx.reporter._
 
-    // the last char seen in the input stream
-    var currentChar: Char = '\u0000'
-    /** Used to detect \r\n pairs and ouput only \n for them. */
-    var previousChar: Char = '\u0000'
-
-    // the position of the beginning of the current token
-    var tokenPos: Positioned = NoPosition
-
-    def currentPos(): Positioned = {
-      new Positioned{}.setPos(f, source.pos)
-    }
-
-    // a buffer to store textual information for parametric tokens
-    val buffer: StringBuffer = new StringBuffer
+  class SourceReader(f: File) {
+    private val source = Source.fromFile(f)
 
     /** What will mark the end of the input stream. */
     val EndOfFile: Char = java.lang.Character.MAX_VALUE
+    
+    private var currentChar_ : Char = _
+    private var nextChar_ : Char = _
+    private var currentPos_ : Positioned = _
+    private var nextPos_ : Positioned = _
 
-    /** Puts the next character in the input stream in currentChar, or the special character EndOfFile if the stream is exhausted. */
-    def nextChar: Unit = {
-      def readChar: Char = if(source.hasNext) {
-        source.next
-      } else {
-        EndOfFile
-      }
+    def currentChar = currentChar_
+    def nextChar = nextChar_
+    def currentPos = currentPos_
 
-      currentChar match {
-        case EndOfFile => return
-        case _ => ; 
-      }
-
-      currentChar  = readChar
-      previousChar = if ((previousChar == '\r') && (currentChar == '\n')) readChar else currentChar
-      currentChar = if (previousChar == '\r') '\n' else previousChar
+    private def readChar(): Char = if (source.hasNext) {
+      source.next
+    } else {
+      EndOfFile
     }
 
+    def consume() = {
+      currentChar_ = nextChar_
+      currentPos_ = nextPos_
+      nextChar_ = readChar()
+      // Skip all '\r's
+      while (nextChar_ == '\r') nextChar_ = readChar()
+      nextPos_ = new Positioned{}.setPos(f, source.pos)
+    }
+
+    consume()
+    consume()
+
+  }
+
+
+
+  def run(ctx: Context)(f: File): Iterator[Token] = {
+    import ctx.reporter._
+
+    val reader = new SourceReader(f)
+    import reader._
+
     /** Gets rid of whitespaces and comments and calls readToken to get the next token. */
-    def nextToken: Token = {
-
-      while(currentChar == '/' || Character.isWhitespace(currentChar)) {
-        if(currentChar == '/') {
-          tokenPos = currentPos()
-          nextChar
-
-          if(currentChar == '/') {
-            // skips end-of-line comments
-            while(currentChar != '\n' && currentChar != EndOfFile) nextChar
-          } else if(currentChar == '*') {
-            // skips block comments
-            var foundEnd: Boolean = false
-            nextChar
-            while(!foundEnd) {
-              while(currentChar != '*') {
-                if(currentChar == EndOfFile) fatal("unterminated block comment", currentPos())
-                  nextChar
-              }
-              nextChar
-              if(currentChar == '/') { foundEnd = true; nextChar }
-            }
-          } else {
-            return new Token(DIV).setPos(tokenPos)
-          }
-        } else {
-          nextChar
-        }
+    @scala.annotation.tailrec
+    def nextToken(): Token = {
+      while (Character.isWhitespace(currentChar)) {
+        consume()
       }
-
-      readToken
+      if (currentChar == '/' && nextChar == '/') {
+        consume()
+        consume()
+        // Skip until EOL
+        while(currentChar != '\n' && currentChar != EndOfFile) consume()
+        nextToken()
+      } else if (currentChar == '/' && nextChar == '*') {
+        val pos = currentPos
+        consume()
+        consume()
+        // Skip everything until */, fail at EOF
+        while (!(currentChar == '*' && nextChar == '/')) {
+          if (currentChar == EndOfFile) {
+            fatal("unclosed comment", pos)
+          } else {
+            consume()
+          }
+        }
+        consume()
+        consume()
+        nextToken()
+      } else {
+        readToken
+      }
     }
 
     /** Reads the next token from the stream. */
     def readToken: Token = {
-      tokenPos = currentPos()
+      val tokenPos = currentPos
 
       currentChar match {
         case EndOfFile => new Token(EOF).setPos(tokenPos)
 
-        case _ if Character.isLetter(currentChar) => {
-          buffer.setLength(0)
+        case _ if Character.isLetter(currentChar) =>
+          val buffer = new StringBuffer
           do {
             buffer.append(currentChar)
-            nextChar
+            consume()
           } while (Character.isLetterOrDigit(currentChar) || currentChar == '_')
           val str: String = buffer.toString
           keywords.get(str) match {
@@ -124,15 +127,12 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
             case None =>
               new ID(str).setPos(tokenPos)
           }
-        }
 
-        case '0' => { nextChar; new INTLIT(0).setPos(tokenPos) }
-
-        case _ if Character.isDigit(currentChar) => {
-          buffer.setLength(0)
+        case _ if Character.isDigit(currentChar) =>
+          val buffer = new StringBuffer
           do {
             buffer.append(currentChar)
-            nextChar
+            consume()
           } while (Character.isDigit(currentChar))
           val num = scala.math.BigInt(buffer.toString)
           if(!num.isValidInt) {
@@ -141,79 +141,83 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
           } else {
             new INTLIT(num.intValue).setPos(tokenPos)
           }
-        }
 
-        case '"' => {
-          buffer.setLength(0)
-          nextChar
+        case '"' =>
+          val pos = currentPos
+          val buffer = new StringBuffer
+          consume()
           while (currentChar != '"') {
             if (currentChar == '\n' || currentChar == EndOfFile) {
-              fatal("unterminated string", tokenPos)
+              fatal("unclosed string literal", pos)
             }
             buffer.append(currentChar)
-            nextChar
+            consume()
           }
-          nextChar
+          consume()
           val str: String = buffer.toString
-          new STRLIT(str).setPos(tokenPos)
-        }
+          new STRLIT(str).setPos(pos)
 
-        case ':' => { nextChar; new Token(COLON).setPos(tokenPos) }
-        case ';' => { nextChar; new Token(SEMICOLON).setPos(tokenPos) }
-        case '.' => { nextChar; new Token(DOT).setPos(tokenPos) }
-        case ',' => { nextChar; new Token(COMMA).setPos(tokenPos) }
-        case '!' => { nextChar; new Token(BANG).setPos(tokenPos) }
-        case '(' => { nextChar; new Token(LPAREN).setPos(tokenPos) }
-        case ')' => { nextChar; new Token(RPAREN).setPos(tokenPos) }
-        case '[' => { nextChar; new Token(LBRACKET).setPos(tokenPos) }
-        case ']' => { nextChar; new Token(RBRACKET).setPos(tokenPos) }
-        case '{' => { nextChar; new Token(LBRACE).setPos(tokenPos) }
-        case '}' => { nextChar; new Token(RBRACE).setPos(tokenPos) }
-        case '<' => { nextChar; new Token(LESSTHAN).setPos(tokenPos) }
-        case '+' => { nextChar; new Token(PLUS).setPos(tokenPos) }
-        case '-' => { nextChar; new Token(MINUS).setPos(tokenPos) }
-        case '*' => { nextChar; new Token(TIMES).setPos(tokenPos) }
-        case '=' => { nextChar; if(currentChar == '=') {
-                                  nextChar; new Token(EQUALS).setPos(tokenPos)
-                                } else {
-                                  new Token(EQSIGN).setPos(tokenPos)
-                                }
-                    }
-        case '&' => { nextChar; if(currentChar == '&') {
-                                  nextChar; new Token(AND).setPos(tokenPos)
-                                } else {
-                                  error("single '&'", tokenPos); new Token(BAD).setPos(tokenPos)
-                                }
-                    }
-        case '|' => { nextChar; if(currentChar == '|') {
-                                  nextChar; new Token(OR).setPos(tokenPos) 
-                                } else {
-                                  error("single '|'", tokenPos); new Token(BAD).setPos(tokenPos)
-                                }
-                    }
-
-        case _ => {
-          error("invalid character: " + currentChar, currentPos());
-          nextChar;
-          new Token(BAD).setPos(tokenPos) }
+        case ':' => consume(); new Token(COLON).setPos(tokenPos)
+        case ';' => consume(); new Token(SEMICOLON).setPos(tokenPos)
+        case '.' => consume(); new Token(DOT).setPos(tokenPos)
+        case ',' => consume(); new Token(COMMA).setPos(tokenPos)
+        case '!' => consume(); new Token(BANG).setPos(tokenPos)
+        case '(' => consume(); new Token(LPAREN).setPos(tokenPos)
+        case ')' => consume(); new Token(RPAREN).setPos(tokenPos)
+        case '[' => consume(); new Token(LBRACKET).setPos(tokenPos)
+        case ']' => consume(); new Token(RBRACKET).setPos(tokenPos)
+        case '{' => consume(); new Token(LBRACE).setPos(tokenPos)
+        case '}' => consume(); new Token(RBRACE).setPos(tokenPos)
+        case '<' => consume(); new Token(LESSTHAN).setPos(tokenPos)
+        case '+' => consume(); new Token(PLUS).setPos(tokenPos)
+        case '-' => consume(); new Token(MINUS).setPos(tokenPos)
+        case '*' => consume(); new Token(TIMES).setPos(tokenPos)
+        case '/' => consume(); new Token(DIV).setPos(tokenPos)
+        case '=' =>
+          consume()
+          if (currentChar == '=') {
+            consume()
+            new Token(EQUALS).setPos(tokenPos)
+          } else {
+            new Token(EQSIGN).setPos(tokenPos)
+          }
+        case '&' =>
+          consume()
+          if(currentChar == '&') {
+            consume()
+            new Token(AND).setPos(tokenPos)
+          } else {
+            error("single '&'", tokenPos)
+            new Token(BAD).setPos(tokenPos)
+          }
+        case '|' =>
+          consume()
+          if(currentChar == '|') {
+            consume()
+            new Token(OR).setPos(tokenPos) 
+          } else {
+            error("single '|'", tokenPos)
+            new Token(BAD).setPos(tokenPos)
+          }
+        case _ =>
+          error("invalid character: " + currentChar, tokenPos)
+          consume()
+          new Token(BAD).setPos(tokenPos)
       }
     }
 
-    nextChar
-
     new Iterator[Token] {
-      var tokenCache: Token = nextToken
+      var tokenCache: Token = nextToken()
       var reachedEnd = false
 
-      def hasNext = {
-        tokenCache.kind != EOF || !reachedEnd
-      }
+      def hasNext = !reachedEnd
 
       def next = {
         val r = tokenCache
-        tokenCache = nextToken
         if (r.kind == EOF) {
           reachedEnd = true
+        } else {
+          tokenCache = nextToken()
         }
         r
       }
@@ -223,9 +227,8 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
 
 object DisplayTokens extends Pipeline[Iterator[Token], Iterator[Token]] {
   def run(ctx: Context)(tokens: Iterator[Token]): Iterator[Token] = {
-
-    val it2 = tokens.map { t => println(s"$t(${t.line}:${t.col})"); t }
-
-    it2.toList.iterator
+    val l = tokens.toList
+    l foreach { t => println(s"$t(${t.line}:${t.col})") }
+    l.iterator
   }
 }
