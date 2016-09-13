@@ -47,18 +47,12 @@ object Symbols {
     var methods = Map[String,MethodSymbol]()
     var members = Map[String,VariableSymbol]()
 
-    def lookupMethod(n: String): Option[MethodSymbol] = (methods.get(n), parent) match {
-      case (None,None) => None
-      case (s @ Some(_), _) => s
-      case (None, Some(p)) => p.lookupMethod(n)
+    def lookupMethod(n: String): Option[MethodSymbol] = {
+      methods.get(n) orElse parent.flatMap(_.lookupMethod(n))
     }
 
-    def lookupVar(n: String): Option[VariableSymbol] = members.get(n) match {
-      case s @ Some(_) => s
-      case None => parent match {
-        case Some(p) => p.lookupVar(n)
-        case None => None
-      }
+    def lookupVar(n: String): Option[VariableSymbol] = {
+      members.get(n) orElse parent.flatMap(_.lookupVar(n))
     }
   }
 
@@ -74,12 +68,10 @@ object Symbols {
       case Some(pms) => pms.overrides(ms)
     }
 
-    def lookupVar(n: String): Option[VariableSymbol] = members.get(n) match {
-      case None => params.get(n) match {
-        case s @ Some(_) => s
-        case None => classSymbol.lookupVar(n)
-      }
-      case s @ Some(_) => s
+    def lookupVar(n: String): Option[VariableSymbol] = {
+      members.get(n) orElse
+      params.get(n) orElse
+      classSymbol.lookupVar(n)
     }
   }
 

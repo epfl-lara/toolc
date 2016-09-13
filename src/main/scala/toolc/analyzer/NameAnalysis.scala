@@ -89,7 +89,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
       // We now know that every class is unique and the inheritance graph is
       // correct. We proceed to check the contents of these classes.
       var done = Set[String]()
-      prog.classes.foreach(collectInClass(_))
+      prog.classes.foreach(collectInClass)
 
       def collectInClass(c: ClassDecl): Unit = {
         val classSym = c.getSymbol
@@ -135,7 +135,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
           }
         }
 
-        c.methods.foreach(collectInMethod(_))
+        c.methods.foreach(collectInMethod)
 
         def collectInMethod(m: MethodDecl): Unit = {
           val methName = m.id.value
@@ -327,11 +327,11 @@ object NameAnalysis extends Pipeline[Program, Program] {
       case id @ Identifier(value: String) =>
         // in this context, it will always be an expression (variable)
         ms.flatMap(_.lookupVar(value)) match {
-          case None => error("Undeclared identifier: " + value + ".", id)
-          case Some(sym) => {
+          case None =>
+            error("Undeclared identifier: " + value + ".", id)
+          case Some(sym) =>
             id.setSymbol(sym)
             varUsage += sym -> true
-          }
         }
 
       case t @ This() =>
@@ -345,10 +345,10 @@ object NameAnalysis extends Pipeline[Program, Program] {
       case New(id @ Identifier(typeName)) =>
         // tpe should always be a class.
         gs.lookupClass(typeName) match {
-          case Some(s) => {
+          case Some(s) =>
             id.setSymbol(s)
-          }
-          case None => error("Undeclared type: " + typeName + ".", id)
+          case None =>
+            error("Undeclared type: " + typeName + ".", id)
         }
 
       case MethodCall(obj, meth, args) =>
