@@ -17,8 +17,8 @@ class Evaluator(ctx: Context, prog: Program) {
     case If(expr, thn, els) =>
       if (evalExpr(ectx, expr).asBool) {
         evalStatement(ectx, thn)
-      } else if (els.isDefined) {
-        evalStatement(ectx, els.get)
+      } else {
+        els.foreach { evalStatement(ectx, _) }
       }
 
     case While(expr, stat) =>
@@ -26,7 +26,7 @@ class Evaluator(ctx: Context, prog: Program) {
         evalStatement(ectx, stat)
       }
 
-    case Println(expr: ExprTree) =>
+    case Println(expr) =>
       evalExpr(ectx, expr) match {
         case BoolValue(v)   => println(v)
         case IntValue(v)    => println(v)
@@ -34,15 +34,12 @@ class Evaluator(ctx: Context, prog: Program) {
         case _ => fatal("Unexpected type", stmt)
       }
 
-    case Assign(id: Identifier, expr: ExprTree) =>
+    case Assign(id, expr) =>
       ectx.setVariable(id.value, evalExpr(ectx, expr))
 
-    case ArrayAssign(id: Identifier, index: ExprTree, expr: ExprTree) =>
+    case ArrayAssign(id, index, expr) =>
       val av = ectx.getVariable(id.value).asArray
       av.setIndex(evalExpr(ectx, index).asInt, evalExpr(ectx, expr).asInt)
-
-    case _ =>
-      fatal("unnexpected statement", stmt)
   }
 
   def evalExpr(ectx: EvaluationContext, e: ExprTree): Value = e match {
@@ -54,11 +51,11 @@ class Evaluator(ctx: Context, prog: Program) {
 
     case Plus(lhs, rhs) =>
       (evalExpr(ectx, lhs), evalExpr(ectx, rhs)) match {
-        case (IntValue(lv), IntValue(rv)) =>       IntValue(lv+rv)
-        case (StringValue(lv), IntValue(rv)) =>    StringValue(lv+rv)
-        case (IntValue(lv), StringValue(rv)) =>    StringValue(lv+rv)
-        case (StringValue(lv), StringValue(rv)) => StringValue(lv+rv)
-        case (l,r) => fatal("Unnexpected types: "+l+"+"+r, e)
+        case (IntValue(lv), IntValue(rv))       => IntValue(lv + rv)
+        case (StringValue(lv), IntValue(rv))    => StringValue(lv + rv)
+        case (IntValue(lv), StringValue(rv))    => StringValue(lv + rv)
+        case (StringValue(lv), StringValue(rv)) => StringValue(lv + rv)
+        case (l,r) => fatal(s"Unexpected types: $l + $r", e)
       }
 
     case Minus(lhs, rhs) =>
@@ -93,12 +90,11 @@ class Evaluator(ctx: Context, prog: Program) {
     case ArrayRead(arr, index) =>
       val av = evalExpr(ectx, arr).asArray
       val i  = evalExpr(ectx, index).asInt
-
       IntValue(av.getIndex(i))
 
     case ArrayLength(arr) =>
       val av = evalExpr(ectx, arr).asArray
-      IntValue(av.size)
+      IntValue(av.length)
 
     case MethodCall(obj, meth, args) =>
       val o  = evalExpr(ectx, obj).asObject
@@ -127,11 +123,9 @@ class Evaluator(ctx: Context, prog: Program) {
     case New(tpe) =>
       val cd = findClass(tpe.value)
       val ov = ObjectValue(cd)
-
       for (f <- fieldsOfClass(cd)) {
         ov.declareField(f)
       }
-
       ov
 
     case This() =>
@@ -144,8 +138,7 @@ class Evaluator(ctx: Context, prog: Program) {
 
     case NewIntArray(size) =>
       val s = evalExpr(ectx, size).asInt
-
-      new ArrayValue(new Array(s), s)
+      new ArrayValue(new Array(s))
   }
 
   abstract class EvaluationContext {
@@ -201,11 +194,11 @@ class Evaluator(ctx: Context, prog: Program) {
   }
 
   sealed abstract class Value {
-    def asInt: Int            = fatal("Unexpected value, found "+this+" expected Int")
-    def asString: String      = fatal("Unexpected value, found "+this+" expected String")
-    def asBool: Boolean       = fatal("Unexpected value, found "+this+" expected Boolean")
-    def asObject: ObjectValue = fatal("Unexpected value, found "+this+" expected Object")
-    def asArray: ArrayValue   = fatal("Unexpected value, found "+this+" expected Array")
+    def asInt: Int            = fatal(s"Unexpected value: found $this, expected Int")
+    def asString: String      = fatal(s"Unexpected value: found $this, expected String")
+    def asBool: Boolean       = fatal(s"Unexpected value: found $this, expected Boolean")
+    def asObject: ObjectValue = fatal(s"Unexpected value: found $this, expected Object")
+    def asArray: ArrayValue   = fatal(s"Unexpected value: found $this, expected Array")
   }
 
   case class ObjectValue(cd: ClassDecl) extends Value {
@@ -215,12 +208,16 @@ class Evaluator(ctx: Context, prog: Program) {
       if (fields contains name) {
         fields += name -> Some(v)
       } else {
-        fatal("Unknown field '"+name+"'")
+        fatal(s"Unknown field '$name'")
       }
     }
 
     def getField(name: String) = {
-      fields.get(name).flatten.getOrElse(fatal("Unknown field '"+name+"'"))
+      fields.get(name) match {
+        case Some(Some(v)) => v
+        case Some(None) => fatal(s"Field '$name' has not been initialized")
+        case None => fatal(s"Unknown field '$name'")
+      }
     }
 
     def declareField(name: String) {
@@ -230,17 +227,18 @@ class Evaluator(ctx: Context, prog: Program) {
     override def asObject = this
   }
 
-  case class ArrayValue(var entries: Array[Int], val size: Int) extends Value {
+  case class ArrayValue(entries: Array[Int]) extends Value {
+    val length = entries.length
     def setIndex(i: Int, v: Int) {
-      if (i >= size || i < 0) {
-        fatal("Index '"+i+"' out of bounds (0 .. "+size+")")
+      if (i >= length || i < 0) {
+        fatal(s"Index '$i' out of bounds (0 .. ${length-1})")
       }
       entries(i) = v
     }
 
     def getIndex(i: Int) = {
-      if (i >= size || i < 0) {
-        fatal("Index '"+i+"' out of bounds (0 .. "+size+")")
+      if (i >= length || i < 0) {
+        fatal(s"Index '$i' out of bounds (0 .. ${length-1})")
       }
       entries(i)
     }
@@ -248,15 +246,15 @@ class Evaluator(ctx: Context, prog: Program) {
     override def asArray = this
   }
 
-  case class StringValue(var v: String) extends Value {
+  case class StringValue(v: String) extends Value {
     override def asString = v
   }
 
-  case class IntValue(var v: Int) extends Value {
+  case class IntValue(v: Int) extends Value {
     override def asInt = v
   }
 
-  case class BoolValue(var v: Boolean) extends Value {
+  case class BoolValue(v: Boolean) extends Value {
     override def asBool = v
   }
 }
