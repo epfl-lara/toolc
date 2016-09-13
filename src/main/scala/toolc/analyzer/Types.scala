@@ -65,7 +65,7 @@ object Types {
         if (cs1 == cs2) {
           true
         } else {
-          cs1.parent.map(findInSymbol(_, cs2)).getOrElse(false)
+          cs1.parent.exists(findInSymbol(_, cs2))
         }
       }
       

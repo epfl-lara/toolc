@@ -7,7 +7,7 @@ sealed class Token(val kind: TokenKind) extends Positioned {
   override def toString = kind.toString
 }
 
-sealed trait TokenKind;
+sealed trait TokenKind
 
 object Tokens {
 

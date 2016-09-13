@@ -99,7 +99,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
         // it is important that we analyze parent classes first
         classSym.parent match {
           case Some(parSym) if !done(parSym.name) =>
-            collectInClass(prog.classes.find(_.id.value.equals(parSym.name)).get)
+            collectInClass(prog.classes.find(_.id.value == parSym.name).get)
 
           case _ =>
         }
@@ -113,7 +113,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
           // are we overriding?
           classSym.parent.flatMap(_.lookupVar(varName)) match {
             case Some(s) =>
-              error(varName + " member declaration overrides previous declaration at " + s.position + ".", varDecl);
+              error(varName + " member declaration overrides previous declaration at " + s.position + ".", varDecl)
               foundInParent = true
 
             case None =>
@@ -210,21 +210,21 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
       while(checked.size != prog.classes.size) {
         for (cd <- prog.classes) {
-            val classSym = gs.lookupClass(cd.id.value).get
+          val classSym = gs.lookupClass(cd.id.value).get
 
-            if(!checked.contains(classSym)) {
-              classSym.parent match {
-                case Some(ps) if(checked.contains(ps)) =>
-                  setCSymbols(cd, gs)
-                  checked += classSym
+          if(!checked.contains(classSym)) {
+            classSym.parent match {
+              case Some(ps) if checked.contains(ps) =>
+                setCSymbols(cd, gs)
+                checked += classSym
 
-                case None =>
-                  setCSymbols(cd, gs)
-                  checked += classSym
+              case None =>
+                setCSymbols(cd, gs)
+                checked += classSym
 
-                case _ =>
-              }
+              case _ =>
             }
+          }
         }
       }
 
@@ -371,7 +371,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
     val gs = collectSymbols(prog)
 
-    terminateIfErrors
+    terminateIfErrors()
 
     setPSymbols(prog, gs)
 

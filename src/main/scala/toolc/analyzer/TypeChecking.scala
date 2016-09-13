@@ -102,7 +102,7 @@ object TypeChecking extends Pipeline[Program, Program] {
           }
         
         case Not(expr) =>
-          tcExpr(expr, TBoolean);
+          tcExpr(expr, TBoolean)
           TBoolean
       }
 

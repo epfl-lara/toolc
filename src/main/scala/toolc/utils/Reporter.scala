@@ -23,7 +23,7 @@ class Reporter {
 
   def fatal(msg: Any, pos: Positioned = NoPosition): Nothing = {
     report("Fatal", msg, pos)
-    sys.exit(1);
+    sys.exit(1)
   }
 
   var filesToLines = Map[File, IndexedSeq[String]]()
@@ -32,10 +32,10 @@ class Reporter {
     System.err.println(msg)
   }
 
-  def terminateIfErrors = {
+  def terminateIfErrors() = {
     if (hasErrors) {
       err("There were errors.")
-      sys.exit(1);
+      sys.exit(1)
     }
   }
 
@@ -47,7 +47,7 @@ class Reporter {
 
       if (pos.line-1 < lines.size) {
           err(lines(pos.line-1))
-          err(" "*pos.col+"^")
+          err(" "*(pos.col - 1)+"^")
       } else {
           err("<line unavailable in source file>")
       }

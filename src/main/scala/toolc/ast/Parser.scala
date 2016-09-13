@@ -405,7 +405,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     }
 
     val tree = parseGoal
-    terminateIfErrors
+    terminateIfErrors()
     tree
   }
 }
