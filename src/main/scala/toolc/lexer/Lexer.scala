@@ -8,28 +8,29 @@ import java.io.File
 object Lexer extends Pipeline[File, Iterator[Token]] {
   import Tokens._
 
-  val keywords = Map[String, TokenKind](
-    "object"  -> OBJECT,
-    "class"   -> CLASS,
-    "def"     -> DEF,
-    "var"     -> VAR,
-    "Unit"    -> UNIT,
-    "main"    -> MAIN,
-    "String"  -> STRING,
-    "extends" -> EXTENDS,
-    "Int"     -> INT,
-    "Bool"    -> BOOLEAN,
-    "while"   -> WHILE,
-    "if"      -> IF,
-    "else"    -> ELSE,
-    "return"  -> RETURN,
-    "length"  -> LENGTH,
-    "true"    -> TRUE,
-    "false"   -> FALSE,
-    "this"    -> THIS,
-    "new"     -> NEW,
-    "println" -> PRINTLN
-  )
+  val keywords: PartialFunction[String, Token] = {
+    case "object"   => OBJECT()
+    case "class"    => CLASS()
+    case "def"      => DEF()
+    case "var"      => VAR()
+    case "Unit"     => UNIT()
+    case "main"     => MAIN()
+    case "String"   => STRING()
+    case "extends"  => EXTENDS()
+    case "Int"      => INT()
+    case "Bool"     => BOOLEAN()
+    case "while"    => WHILE()
+    case "if"       => IF()
+    case "else"     => ELSE()
+    case "return"   => RETURN()
+    case "length"   => LENGTH()
+    case "true"     => TRUE()
+    case "false"    => FALSE()
+    case "this"     => THIS()
+    case "new"      => NEW()
+    case "println"  => PRINTLN()
+  }
+
 
 
   class SourceReader(f: File) {
@@ -66,7 +67,6 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
     consume()
 
   }
-
 
 
   def run(ctx: Context)(f: File): Iterator[Token] = {
@@ -112,7 +112,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       val tokenPos = currentPos
 
       currentChar match {
-        case EndOfFile => new Token(EOF).setPos(tokenPos)
+        case EndOfFile => EOF().setPos(tokenPos)
 
         case _ if Character.isLetter(currentChar) =>
           val buffer = new StringBuffer
@@ -121,11 +121,11 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
             consume()
           } while (Character.isLetterOrDigit(currentChar) || currentChar == '_')
           val str: String = buffer.toString
-          keywords.get(str) match {
-            case Some(tokenInfo) =>
-              new Token(tokenInfo).setPos(tokenPos)
+          keywords.lift(str) match {
+            case Some(token) =>
+              token.setPos(tokenPos)
             case None =>
-              new ID(str).setPos(tokenPos)
+              ID(str).setPos(tokenPos)
           }
 
         case _ if Character.isDigit(currentChar) =>
@@ -137,9 +137,9 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
           val num = scala.math.BigInt(buffer.toString)
           if(!num.isValidInt) {
             error("value out of integer range", tokenPos)
-            new Token(BAD).setPos(tokenPos)
+            BAD().setPos(tokenPos)
           } else {
-            new INTLIT(num.intValue).setPos(tokenPos)
+            INTLIT(num.intValue).setPos(tokenPos)
           }
 
         case '"' =>
@@ -155,54 +155,54 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
           }
           consume()
           val str: String = buffer.toString
-          new STRLIT(str).setPos(pos)
+          STRINGLIT(str).setPos(pos)
 
-        case ':' => consume(); new Token(COLON).setPos(tokenPos)
-        case ';' => consume(); new Token(SEMICOLON).setPos(tokenPos)
-        case '.' => consume(); new Token(DOT).setPos(tokenPos)
-        case ',' => consume(); new Token(COMMA).setPos(tokenPos)
-        case '!' => consume(); new Token(BANG).setPos(tokenPos)
-        case '(' => consume(); new Token(LPAREN).setPos(tokenPos)
-        case ')' => consume(); new Token(RPAREN).setPos(tokenPos)
-        case '[' => consume(); new Token(LBRACKET).setPos(tokenPos)
-        case ']' => consume(); new Token(RBRACKET).setPos(tokenPos)
-        case '{' => consume(); new Token(LBRACE).setPos(tokenPos)
-        case '}' => consume(); new Token(RBRACE).setPos(tokenPos)
-        case '<' => consume(); new Token(LESSTHAN).setPos(tokenPos)
-        case '+' => consume(); new Token(PLUS).setPos(tokenPos)
-        case '-' => consume(); new Token(MINUS).setPos(tokenPos)
-        case '*' => consume(); new Token(TIMES).setPos(tokenPos)
-        case '/' => consume(); new Token(DIV).setPos(tokenPos)
+        case ':' => consume(); COLON().setPos(tokenPos)
+        case ';' => consume(); SEMICOLON().setPos(tokenPos)
+        case '.' => consume(); DOT().setPos(tokenPos)
+        case ',' => consume(); COMMA().setPos(tokenPos)
+        case '!' => consume(); BANG().setPos(tokenPos)
+        case '(' => consume(); LPAREN().setPos(tokenPos)
+        case ')' => consume(); RPAREN().setPos(tokenPos)
+        case '[' => consume(); LBRACKET().setPos(tokenPos)
+        case ']' => consume(); RBRACKET().setPos(tokenPos)
+        case '{' => consume(); LBRACE().setPos(tokenPos)
+        case '}' => consume(); RBRACE().setPos(tokenPos)
+        case '<' => consume(); LESSTHAN().setPos(tokenPos)
+        case '+' => consume(); PLUS().setPos(tokenPos)
+        case '-' => consume(); MINUS().setPos(tokenPos)
+        case '*' => consume(); TIMES().setPos(tokenPos)
+        case '/' => consume(); DIV().setPos(tokenPos)
         case '=' =>
           consume()
           if (currentChar == '=') {
             consume()
-            new Token(EQUALS).setPos(tokenPos)
+            EQUALS().setPos(tokenPos)
           } else {
-            new Token(EQSIGN).setPos(tokenPos)
+            EQSIGN().setPos(tokenPos)
           }
         case '&' =>
           consume()
           if(currentChar == '&') {
             consume()
-            new Token(AND).setPos(tokenPos)
+            AND().setPos(tokenPos)
           } else {
             error("single '&'", tokenPos)
-            new Token(BAD).setPos(tokenPos)
+            BAD().setPos(tokenPos)
           }
         case '|' =>
           consume()
           if(currentChar == '|') {
             consume()
-            new Token(OR).setPos(tokenPos) 
+            OR().setPos(tokenPos)
           } else {
             error("single '|'", tokenPos)
-            new Token(BAD).setPos(tokenPos)
+            BAD().setPos(tokenPos)
           }
         case _ =>
           error("invalid character: " + currentChar, tokenPos)
           consume()
-          new Token(BAD).setPos(tokenPos)
+          BAD().setPos(tokenPos)
       }
     }
 
@@ -214,7 +214,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
 
       def next = {
         val r = tokenCache
-        if (r.kind == EOF) {
+        if (r == EOF()) {
           reachedEnd = true
         } else {
           tokenCache = nextToken()
