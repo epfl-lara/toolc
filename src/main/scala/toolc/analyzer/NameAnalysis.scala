@@ -49,41 +49,39 @@ object NameAnalysis extends Pipeline[Program, Program] {
         global.classes += (name -> classSym)
       }
 
-      // We check that all parent classes are defined, and build an inheritance
-      // "graph"
-      var parents = Map[String,String]()
+      // Set parent Symbols
+      for {
+        cls <- prog.classes
+        clSym = global.classes(cls.id.value)
+        par <- cls.parent
+      } yield {
+        global.lookupClass(par.value) match {
+          case None =>
+            error(s"Class ${clSym.name} extends class ${par.value} which is not defined.", par)
+          case Some(parSym) =>
+            clSym.parent = Some(parSym)
+            par.setSymbol(parSym)
+        }
+      }
 
-      for (c <- prog.classes) {
-        val cs = global.classes(c.id.value)
+      // Check there are no cycles in the inheritance graph
+      prog.classes foreach { cls =>
+        val clsSym = cls.getSymbol
 
-        c.parent.foreach{ parID =>
-          global.lookupClass(parID.value) match {
-            case None =>
-              error("Class " + cs.name + " extends class " + parID.value + " which is not defined.", parID)
-
-            case Some(p) =>
-              if(p == cs) {
-                error("Class " + cs.name + " cannot extend itself.", c)
-              } else {
-                cs.parent = Some(p)
-                parID.setSymbol(p)
-                parents += cs.name -> parID.value
-              }
+        def mkChain(curr: ClassSymbol): List[ClassSymbol] = {
+          curr.parent match {
+            case None => List(curr)
+            case Some(`clsSym`) => List(curr, clsSym)
+            case Some(p) => curr :: mkChain(p)
           }
         }
-        // We check that there are no cycles in the dependance graph (not that
-        // well optimized)
-        parents.keys.foreach{ k =>
-          var traversed: List[String] = k :: Nil
-          var current = k
-          while(parents.isDefinedAt(current)) {
-            current = parents(current)
-            if(traversed contains current) {
-              fatal("Cyclic inheritance graph: " + (traversed.dropWhile(!current.equals(_)) ::: (current :: Nil)).mkString(" <: "))
-            }
-            traversed = traversed ::: (current :: Nil)
-          }
+
+        val chain = mkChain(clsSym)
+
+        if (chain.size > 1 && chain.head == chain.last) {
+          fatal("Cyclic inheritance: " + chain.mkString(" -> "))
         }
+
       }
 
       // We now know that every class is unique and the inheritance graph is
@@ -228,7 +226,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
         }
       }
 
-      prog.main.stats.foreach(s => setSSymbols(s, gs, None))
+      prog.main.stats.foreach(setSSymbols(_)(gs, None))
     }
 
     def setCSymbols(klass: ClassDecl, gs: GlobalScope): Unit = {
@@ -285,33 +283,34 @@ object NameAnalysis extends Pipeline[Program, Program] {
         }
       }
 
-      meth.stats.foreach(setSSymbols(_,gs,Some(methSym)))
-      setESymbols(meth.retExpr, gs, Some(methSym))
+      meth.stats.foreach(setSSymbols(_)(gs,Some(methSym)))
+      setESymbols(meth.retExpr)(gs, Some(methSym))
     }
 
-    def setSSymbols(stat: StatTree, gs: GlobalScope, ms: Option[MethodSymbol]): Unit = stat match {
-      case Block(stats) => stats.foreach(setSSymbols(_,gs,ms))
+    def setSSymbols(stat: StatTree)(implicit gs: GlobalScope, ms: Option[MethodSymbol]): Unit = stat match {
+      case Block(stats) => stats.foreach(setSSymbols)
       case If(expr, thn, elz) =>
-        setESymbols(expr,gs,ms)
-        setSSymbols(thn,gs,ms)
-        elz.foreach(setSSymbols(_,gs,ms))
+        setESymbols(expr)
+        setSSymbols(thn)
+        elz.foreach(setSSymbols)
 
       case While(expr, stat) =>
-        setESymbols(expr,gs,ms)
-        setSSymbols(stat,gs,ms)
+        setESymbols(expr)
+        setSSymbols(stat)
 
-      case Println(expr) => setESymbols(expr,gs,ms)
+      case Println(expr) =>
+        setESymbols(expr)
       case Assign(id, expr) =>
-        setISymbol(id, ms)
-        setESymbols(expr,gs,ms)
+        setISymbol(id)
+        setESymbols(expr)
 
       case ArrayAssign(id, index, expr) =>
-        setISymbol(id,ms)
-        setESymbols(index,gs,ms)
-        setESymbols(expr,gs,ms)
+        setISymbol(id)
+        setESymbols(index)
+        setESymbols(expr)
     }
 
-    def setISymbol(id: Identifier, ms: Option[MethodSymbol]) = {
+    def setISymbol(id: Identifier)(implicit ms: Option[MethodSymbol]) = {
       // in this context, it will always be an expression (variable)
       ms.flatMap(_.lookupVar(id.value)) match {
         case None =>
@@ -322,21 +321,42 @@ object NameAnalysis extends Pipeline[Program, Program] {
       }
     }
 
-    def setESymbols(expr: ExprTree, gs: GlobalScope, ms: Option[MethodSymbol]): Unit = expr match {
-      case And(lhs, rhs) => { setESymbols(lhs,gs,ms); setESymbols(rhs,gs,ms) }
-      case Or(lhs, rhs) => { setESymbols(lhs,gs,ms); setESymbols(rhs,gs,ms) }
-      case Plus(lhs, rhs) => { setESymbols(lhs,gs,ms); setESymbols(rhs,gs,ms) }
-      case Minus(lhs, rhs) => { setESymbols(lhs,gs,ms); setESymbols(rhs,gs,ms) }
-      case Times(lhs, rhs) => { setESymbols(lhs,gs,ms); setESymbols(rhs,gs,ms) }
-      case Div(lhs, rhs) => { setESymbols(lhs,gs,ms); setESymbols(rhs,gs,ms) }
-      case LessThan(lhs, rhs) => { setESymbols(lhs,gs,ms); setESymbols(rhs,gs,ms) }
-      case Equals(lhs, rhs) => { setESymbols(lhs,gs,ms); setESymbols(rhs,gs,ms) }
-      case Not(ex) => setESymbols(ex,gs,ms)
-      case ArrayRead(arr, index) => { setESymbols(arr,gs,ms); setESymbols(index,gs,ms) }
-      case ArrayLength(arr) => setESymbols(arr,gs,ms)
-      case NewIntArray(size) => setESymbols(size,gs,ms)
-
-
+    def setESymbols(expr: ExprTree)(implicit gs: GlobalScope, ms: Option[MethodSymbol]): Unit = expr match {
+      case And(lhs, rhs) =>
+        setESymbols(lhs)
+        setESymbols(rhs)
+      case Or(lhs, rhs) =>
+        setESymbols(lhs)
+        setESymbols(rhs)
+      case Plus(lhs, rhs) =>
+        setESymbols(lhs)
+        setESymbols(rhs)
+      case Minus(lhs, rhs) =>
+        setESymbols(lhs)
+        setESymbols(rhs)
+      case Times(lhs, rhs) =>
+        setESymbols(lhs)
+        setESymbols(rhs)
+      case Div(lhs, rhs) =>
+        setESymbols(lhs)
+        setESymbols(rhs)
+      case LessThan(lhs, rhs) =>
+        setESymbols(lhs)
+        setESymbols(rhs)
+      case Equals(lhs, rhs) =>
+        setESymbols(lhs)
+        setESymbols(rhs)
+      case Not(ex) =>
+        setESymbols(ex)
+      case ArrayRead(arr, index) =>
+        setESymbols(arr)
+        setESymbols(index)
+      case ArrayLength(arr) =>
+        setESymbols(arr)
+      case NewIntArray(size) =>
+        setESymbols(size)
+      case Variable(id) =>
+        setISymbol(id)
       case t @ This() =>
         ms.map(_.classSymbol) match {
           case Some(cs) =>
@@ -355,8 +375,8 @@ object NameAnalysis extends Pipeline[Program, Program] {
         }
 
       case MethodCall(obj, meth, args) =>
-        setESymbols(obj,gs,ms)
-        args.foreach(setESymbols(_,gs,ms))
+        setESymbols(obj)
+        args.foreach(setESymbols)
 
       case _ =>
     }
