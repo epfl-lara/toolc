@@ -35,7 +35,7 @@ object ASTDumpParser extends Pipeline[ASTNode, Program] {
         case Node("MainObject", subs) =>
           MainObject(x(subs(0)), xList(subs(1)))
         case Node("ClassDecl", subs) =>
-          ClassDecl(x(subs(0)), xOpt(subs(1)), xList(subs(2)), xList(subs(3)))
+          ClassDecl(x(subs(0)), x(subs(1)), xList(subs(2)), xList(subs(3)))
         case Node("VarDecl", subs) =>
           VarDecl(x(subs(0)), x(subs(1)))
         case Node("MethodDecl", subs) =>

@@ -95,6 +95,7 @@ object Printer {
         case IntType()      => app("Int")
         case BooleanType()  => app("Bool")
         case StringType()   => app("String")
+        case ClassType(id)  => app(id.value)
 
         case Block(stats) =>
           app("{\n")
@@ -139,6 +140,10 @@ object Printer {
           app("] = ")
           toStr(expr)
           app(";")
+        case DoExpr(expr) =>
+          app("do(")
+          toStr(expr)
+          app(");")
         case And(lhs, rhs)      => binOp(lhs, "&&", rhs)
         case Or(lhs, rhs)       => binOp(lhs, "||", rhs)
         case Plus(lhs, rhs)     => binOp(lhs, "+", rhs)
@@ -187,6 +192,8 @@ object Printer {
         case Not(expr) =>
           app("!")
           paren(toStr(expr))
+        case Variable(id) =>
+          app(id.value)
       }
     }
 

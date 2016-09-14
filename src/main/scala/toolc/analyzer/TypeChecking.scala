@@ -65,8 +65,8 @@ object TypeChecking extends Pipeline[Program, Program] {
           tcExpr(rhs, TInt)
           TBoolean
         case Equals(lhs, rhs) =>
-          val tLeft = tcExpr(lhs, TInt, TBoolean, TString, TIntArray, anyObject)
-          val tRight = tcExpr(rhs, TInt, TBoolean, TString, TIntArray, anyObject)
+          val tLeft = tcExpr(lhs, TInt, TBoolean, TString, TIntArray, TObject)
+          val tRight = tcExpr(rhs, TInt, TBoolean, TString, TIntArray, TObject)
           
           (tLeft,tRight) match {
             case (TInt,TInt) => TBoolean
@@ -87,7 +87,7 @@ object TypeChecking extends Pipeline[Program, Program] {
           TInt
         case MethodCall(obj, meth, args) =>
           // Finally we check these method calls!
-          val objType = tcExpr(obj, anyObject)
+          val objType = tcExpr(obj, TObject)
           
           objType match {
             case TClass(os) =>

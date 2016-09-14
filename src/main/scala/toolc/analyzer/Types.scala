@@ -77,6 +77,6 @@ object Types {
     override def toString = classSymbol.name
   }
 
-  // special object to implement the fact that all objects are its subclasses
-  val anyObject = TClass(new ClassSymbol("Object"))
+  // The top of the class hierarchy
+  val TObject = TClass(new ClassSymbol("Object"))
 }
