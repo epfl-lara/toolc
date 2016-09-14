@@ -53,7 +53,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
       // Maps each argument to one local variable index position
       val argMappings = mt.args.zipWithIndex.map { case (arg, index) =>
-        arg.id.getSymbol.name -> index
+        arg.id.getSymbol.name -> (index + 1)
       }.toMap
 
       // Maps each variable to one local variable index position
@@ -348,8 +348,6 @@ object CodeGeneration extends Pipeline[Program, Unit] {
         ch << ICONST_0
         ch << Label(trueLabel)
       }
-
-      cgExpr(expr)
     }
 
     def typeToDescr(t: Type): String = t match {
