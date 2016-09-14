@@ -9,25 +9,25 @@ class Evaluator(ctx: Context, prog: Program) {
 
   def eval() {
     val ectx = new MainMethodContext
-    prog.main.stats.foreach(evalStatement(ectx, _))
+    prog.main.stats.foreach(evalStatement(_)(ectx))
   }
 
-  def evalStatement(ectx: EvaluationContext, stmt: StatTree): Unit = stmt match {
-    case Block(stats) => stats.foreach(evalStatement(ectx, _))
+  def evalStatement(stmt: StatTree)(implicit ectx: EvaluationContext): Unit = stmt match {
+    case Block(stats) => stats.foreach(evalStatement)
     case If(expr, thn, els) =>
-      if (evalExpr(ectx, expr).asBool) {
-        evalStatement(ectx, thn)
+      if (evalExpr(expr).asBool) {
+        evalStatement(thn)
       } else {
-        els.foreach { evalStatement(ectx, _) }
+        els foreach evalStatement
       }
 
     case While(expr, stat) =>
-      while(evalExpr(ectx, expr).asBool) {
-        evalStatement(ectx, stat)
+      while(evalExpr(expr).asBool) {
+        evalStatement(stat)
       }
 
     case Println(expr) =>
-      evalExpr(ectx, expr) match {
+      evalExpr(expr) match {
         case BoolValue(v)   => println(v)
         case IntValue(v)    => println(v)
         case StringValue(v) => println(v)
@@ -35,25 +35,25 @@ class Evaluator(ctx: Context, prog: Program) {
       }
 
     case Assign(id, expr) =>
-      ectx.setVariable(id.value, evalExpr(ectx, expr))
+      ectx.setVariable(id.value, evalExpr(expr))
 
     case ArrayAssign(id, index, expr) =>
       val av = ectx.getVariable(id.value).asArray
-      av.setIndex(evalExpr(ectx, index).asInt, evalExpr(ectx, expr).asInt)
+      av.setIndex(evalExpr(index).asInt, evalExpr(expr).asInt)
 
     case DoExpr(expr) =>
-      evalExpr(ectx, expr)
+      evalExpr(expr)
   }
 
-  def evalExpr(ectx: EvaluationContext, e: ExprTree): Value = e match {
+  def evalExpr(e: ExprTree)(implicit ectx: EvaluationContext): Value = e match {
     case And(lhs, rhs) =>
-      BoolValue(evalExpr(ectx, lhs).asBool && evalExpr(ectx, rhs).asBool)
+      BoolValue(evalExpr(lhs).asBool && evalExpr(rhs).asBool)
 
     case Or(lhs, rhs)  =>
-      BoolValue(evalExpr(ectx, lhs).asBool || evalExpr(ectx, rhs).asBool)
+      BoolValue(evalExpr(lhs).asBool || evalExpr(rhs).asBool)
 
     case Plus(lhs, rhs) =>
-      (evalExpr(ectx, lhs), evalExpr(ectx, rhs)) match {
+      (evalExpr(lhs), evalExpr(rhs)) match {
         case (IntValue(lv), IntValue(rv))       => IntValue(lv + rv)
         case (StringValue(lv), IntValue(rv))    => StringValue(lv + rv)
         case (IntValue(lv), StringValue(rv))    => StringValue(lv + rv)
@@ -62,27 +62,27 @@ class Evaluator(ctx: Context, prog: Program) {
       }
 
     case Minus(lhs, rhs) =>
-      IntValue(evalExpr(ectx, lhs).asInt - evalExpr(ectx, rhs).asInt)
+      IntValue(evalExpr(lhs).asInt - evalExpr(rhs).asInt)
 
     case Times(lhs, rhs) =>
-      IntValue(evalExpr(ectx, lhs).asInt * evalExpr(ectx, rhs).asInt)
+      IntValue(evalExpr(lhs).asInt * evalExpr(rhs).asInt)
 
     case Div(lhs, rhs) =>
-      IntValue(evalExpr(ectx, lhs).asInt / evalExpr(ectx, rhs).asInt)
+      IntValue(evalExpr(lhs).asInt / evalExpr(rhs).asInt)
 
     case LessThan(lhs, rhs) =>
-      BoolValue(evalExpr(ectx, lhs).asInt < evalExpr(ectx, rhs).asInt)
+      BoolValue(evalExpr(lhs).asInt < evalExpr(rhs).asInt)
 
     case Not(expr) =>
-      BoolValue(!evalExpr(ectx, expr).asBool)
+      BoolValue(!evalExpr(expr).asBool)
 
     case IntLit(value) => IntValue(value)
     case StringLit(value) => StringValue(value)
     case True() => BoolValue(true)
     case False() => BoolValue(false)
     case Equals(lhs, rhs) =>
-      val lv = evalExpr(ectx, lhs)
-      val rv = evalExpr(ectx, rhs)
+      val lv = evalExpr(lhs)
+      val rv = evalExpr(rhs)
       val res = (lv, rv) match {
         case (IntValue(l), IntValue(r)) => l == r
         case (BoolValue(l), BoolValue(r)) => l == r
@@ -91,17 +91,17 @@ class Evaluator(ctx: Context, prog: Program) {
       BoolValue(res)
 
     case ArrayRead(arr, index) =>
-      val av = evalExpr(ectx, arr).asArray
-      val i  = evalExpr(ectx, index).asInt
+      val av = evalExpr(arr).asArray
+      val i  = evalExpr(index).asInt
       IntValue(av.getIndex(i))
 
     case ArrayLength(arr) =>
-      val av = evalExpr(ectx, arr).asArray
+      val av = evalExpr(arr).asArray
       IntValue(av.length)
 
     case MethodCall(obj, meth, args) =>
-      val o  = evalExpr(ectx, obj).asObject
-      val as = args.map(evalExpr(ectx, _))
+      val o  = evalExpr(obj).asObject
+      val as = args.map(evalExpr)
 
       val nmctx = new MethodContext(o)
 
@@ -116,9 +116,9 @@ class Evaluator(ctx: Context, prog: Program) {
         nmctx.declareVariable(v.id.value)
       }
 
-      mdecl.stats.foreach(evalStatement(nmctx, _))
+      mdecl.stats.foreach(evalStatement(_)(nmctx))
 
-      evalExpr(nmctx, mdecl.retExpr)
+      evalExpr(mdecl.retExpr)(nmctx)
 
     case Variable(Identifier(name)) =>
       ectx.getVariable(name)
@@ -140,7 +140,7 @@ class Evaluator(ctx: Context, prog: Program) {
       }
 
     case NewIntArray(size) =>
-      val s = evalExpr(ectx, size).asInt
+      val s = evalExpr(size).asInt
       new ArrayValue(new Array(s))
   }
 
