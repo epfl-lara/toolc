@@ -21,17 +21,16 @@ object Symbols {
   }
 
   sealed abstract class Symbol extends Positioned with Typed {
-    val id: Int = ID.next
+    val id: Int = UniqueCounters.next
     val name: String
   }
 
-  private object ID {
-    private var c: Int = 0
+  private object UniqueCounters {
+    private var c: Int = -1
 
     def next: Int = {
-      val ret = c
       c = c + 1
-      ret
+      c
     }
   }
 

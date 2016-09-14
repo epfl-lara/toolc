@@ -38,9 +38,8 @@ object NameAnalysis extends Pipeline[Program, Program] {
           error("No class can be named Object", c.id)
         }
 
-        global.lookupClass(name) match {
-          case Some(s) => error(s"Class $name is defined more than once. First definition here: ${s.position}", c.id)
-          case None =>
+        global.lookupClass(name) foreach { s =>
+          error(s"Class $name is defined more than once. First definition here: ${s.position}", c.id)
         }
 
         val classSym = new ClassSymbol(name).setPos(c)
