@@ -284,7 +284,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
         case sl @ StringLit(value) => ch << LineNumber(sl.line) << Ldc(value)
         case t @ True() => ch << LineNumber(t.line) << Ldc(1)
         case f @ False() => ch << LineNumber(f.line) << Ldc(0)
-        case id @ Identifier(_) =>
+        case Variable(id) =>
           id.getSymbol match {
             case vsym: VariableSymbol =>
               mapping get vsym.name match {

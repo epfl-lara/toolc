@@ -116,7 +116,7 @@ object TypeChecking extends Pipeline[Program, Program] {
         case StringLit(value) => TString
         case True() => TBoolean
         case False() => TBoolean
-        case id @ Identifier(_) => id.getType
+        case Variable(id) => id.getType
         case t @ This() => TObject(t.getSymbol)
         case NewIntArray(size) =>
           tcExpr(size,TInt)
@@ -167,9 +167,9 @@ object TypeChecking extends Pipeline[Program, Program] {
       case Println(expr) =>
         tcExpr(expr, TString, TInt, TBoolean)
       case Assign(id, expr) =>
-        tcExpr(expr, tcExpr(id))
+        tcExpr(expr, id.getType)
       case ArrayAssign(id, index, expr) =>
-        tcExpr(id, TIntArray)
+        tcExpr(Variable(id), TIntArray)
         tcExpr(index, TInt)
         tcExpr(expr, TInt)
     }

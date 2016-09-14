@@ -74,10 +74,13 @@ object ParserHarness {
             str = str + ident + "}"
             str
 
+          case id @ Identifier(value) => value
+
           case IntArrayType() => "Int[]"
           case IntType() => "Int"
           case BooleanType() => "Bool"
           case StringType() => "String"
+          case ClassType(id) => toStr(id)
           
           case Block(lst) =>
             val i2 = ident
@@ -113,7 +116,7 @@ object ParserHarness {
           case StringLit(value) => "\"" + value + "\""
           case True() => "true"
           case False() => "false"
-          case id @ Identifier(value) => value
+          case Variable(id) => toStr(id)
           case This() => "this"
           case NewIntArray(size) => "new Int[" + toStr(size) + "]"
           case New(tpe) => "new " + toStr(tpe) + "()"

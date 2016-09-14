@@ -8,13 +8,44 @@ import analyzer.Types._
 object Trees {
   sealed trait Tree extends Positioned
 
-  case class Program(main: MainObject, classes: List[ClassDecl]) extends Tree
-  case class MainObject(id: Identifier, stats: List[StatTree]) extends Tree with Symbolic[ClassSymbol]
-  case class ClassDecl(id: Identifier, parent: Option[Identifier], vars: List[VarDecl], methods: List[MethodDecl]) extends Tree with Symbolic[ClassSymbol]
-  case class VarDecl(tpe: TypeTree, id: Identifier) extends Tree with Symbolic[VariableSymbol]
-  case class MethodDecl(retType: TypeTree, id: Identifier, args: List[Formal], vars: List[VarDecl], stats: List[StatTree], retExpr: ExprTree) extends Tree with Symbolic[MethodSymbol]
-  sealed case class Formal(tpe: TypeTree, id: Identifier) extends Tree with Symbolic[VariableSymbol]
+  // Unique symbols
+  case class Identifier(value: String) extends Tree with Symbolic[Symbol] with Typed {
+    override def getType: Type = getSymbol match {
+      case cs: ClassSymbol =>
+        TObject(cs)
 
+      case ms: MethodSymbol =>
+        sys.error("Requesting type of a method identifier.")
+
+      case vs: VariableSymbol =>
+        vs.getType
+    }
+    override def setType(tpe: Type) = this
+    override def toString = value
+  }
+
+
+  // Definitions
+  sealed trait DefTree extends Tree
+  case class Program(main: MainObject, classes: List[ClassDecl])
+    extends DefTree
+  case class MainObject(id: Identifier, stats: List[StatTree])
+    extends DefTree with Symbolic[ClassSymbol]
+  case class ClassDecl(id: Identifier, parent: Option[Identifier], vars: List[VarDecl], methods: List[MethodDecl])
+    extends DefTree with Symbolic[ClassSymbol]
+  case class VarDecl(tpe: TypeTree, id: Identifier)
+    extends DefTree with Symbolic[VariableSymbol]
+  case class MethodDecl(retType: TypeTree,
+                        id: Identifier,
+                        args: List[Formal],
+                        vars: List[VarDecl],
+                        stats: List[StatTree],
+                        retExpr: ExprTree)
+    extends DefTree with Symbolic[MethodSymbol]
+  sealed case class Formal(tpe: TypeTree, id: Identifier)
+    extends DefTree with Symbolic[VariableSymbol]
+
+  // Types
   sealed trait TypeTree extends Tree with Typed
   case class IntArrayType() extends TypeTree {
     override def getType = TIntArray
@@ -28,7 +59,11 @@ object Trees {
   case class StringType() extends TypeTree {
     override def getType = TString
   }
+  case class ClassType(id: Identifier) extends TypeTree {
+    override def getType = id.getType
+  }
 
+  // Statements
   sealed trait StatTree extends Tree
   case class Block(stats: List[StatTree]) extends StatTree
   case class If(expr: ExprTree, thn: StatTree, els: Option[StatTree]) extends StatTree
@@ -37,6 +72,7 @@ object Trees {
   case class Assign(id: Identifier, expr: ExprTree) extends StatTree
   case class ArrayAssign(id: Identifier, index: ExprTree, expr: ExprTree) extends StatTree
 
+  // Expressions
   sealed trait ExprTree extends Tree with Typed
   case class And(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class Or(lhs: ExprTree, rhs: ExprTree) extends ExprTree
@@ -51,23 +87,9 @@ object Trees {
   case class MethodCall(obj: ExprTree, meth: Identifier, args: List[ExprTree]) extends ExprTree
   case class IntLit(value: Int) extends ExprTree
   case class StringLit(value: String) extends ExprTree
-
+  case class Variable(id: Identifier) extends ExprTree
   case class True() extends ExprTree
   case class False() extends ExprTree
-  case class Identifier(value: String) extends TypeTree with ExprTree with Symbolic[Symbol] {
-    override def getType: Type = getSymbol match {
-      case cs: ClassSymbol =>
-        TObject(cs)
-
-      case ms: MethodSymbol =>
-        sys.error("Requesting type of a method identifier.")
-
-      case vs: VariableSymbol =>
-        vs.getType
-    }
-    override def setType(tpe: Type) = this
-    override def toString = value
-  }
   case class This() extends ExprTree with Symbolic[ClassSymbol]
   case class NewIntArray(size: ExprTree) extends ExprTree
   case class New(tpe: Identifier) extends ExprTree

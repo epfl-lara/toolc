@@ -160,7 +160,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         val ret = StringType().setPos(currentToken)
         readToken()
         ret
-      case ID(_) => parseIdentifier
+      case ID(_) => ClassType(parseIdentifier)
       case _ => expected(BOOLEAN(), INT(),STRING(), ID("*"))
     }
     
@@ -370,7 +370,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         eat(RPAREN())
         res
       case id: ID =>
-        parseIdentifier
+        Variable(parseIdentifier)
       case NEW() =>
         val pos = currentToken
         readToken()

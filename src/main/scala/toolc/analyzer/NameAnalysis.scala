@@ -302,13 +302,24 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
       case Println(expr) => setESymbols(expr,gs,ms)
       case Assign(id, expr) =>
-        setESymbols(id,gs,ms)
+        setISymbol(id, ms)
         setESymbols(expr,gs,ms)
 
       case ArrayAssign(id, index, expr) =>
-        setESymbols(id,gs,ms)
+        setISymbol(id,ms)
         setESymbols(index,gs,ms)
         setESymbols(expr,gs,ms)
+    }
+
+    def setISymbol(id: Identifier, ms: Option[MethodSymbol]) = {
+      // in this context, it will always be an expression (variable)
+      ms.flatMap(_.lookupVar(id.value)) match {
+        case None =>
+          error("Undeclared identifier: " + id.value + ".", id)
+        case Some(sym) =>
+          id.setSymbol(sym)
+          varUsage += sym -> true
+      }
     }
 
     def setESymbols(expr: ExprTree, gs: GlobalScope, ms: Option[MethodSymbol]): Unit = expr match {
@@ -324,15 +335,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
       case ArrayRead(arr, index) => { setESymbols(arr,gs,ms); setESymbols(index,gs,ms) }
       case ArrayLength(arr) => setESymbols(arr,gs,ms)
       case NewIntArray(size) => setESymbols(size,gs,ms)
-      case id @ Identifier(value: String) =>
-        // in this context, it will always be an expression (variable)
-        ms.flatMap(_.lookupVar(value)) match {
-          case None =>
-            error("Undeclared identifier: " + value + ".", id)
-          case Some(sym) =>
-            id.setSymbol(sym)
-            varUsage += sym -> true
-        }
+
 
       case t @ This() =>
         ms.map(_.classSymbol) match {
@@ -359,7 +362,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
     }
 
     def setTypeSymbol(tpe: TypeTree, gs: GlobalScope): Unit = tpe match {
-      case id @ Identifier(value) => gs.lookupClass(value) match {
+      case ClassType(id @ Identifier(value)) => gs.lookupClass(value) match {
         case Some(s) =>
           id.setSymbol(s)
 

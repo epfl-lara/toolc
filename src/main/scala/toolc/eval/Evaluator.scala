@@ -117,7 +117,7 @@ class Evaluator(ctx: Context, prog: Program) {
 
       evalExpr(nmctx, mdecl.retExpr)
 
-    case Identifier(name) =>
+    case Variable(Identifier(name)) =>
       ectx.getVariable(name)
 
     case New(tpe) =>
