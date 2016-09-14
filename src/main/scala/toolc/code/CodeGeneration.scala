@@ -34,7 +34,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           methSym.name,
           methSym.argList.map(parSym => typeToDescr(parSym.getType))
         ).codeHandler
-        generateMethodCode(ch, methDecl)
+        cGenMethod(ch, methDecl)
       })
 
       try {
@@ -48,7 +48,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     // of the stack frame
 
 
-    def generateMethodCode(ch: CodeHandler, mt: MethodDecl): Unit = {
+    def cGenMethod(ch: CodeHandler, mt: MethodDecl): Unit = {
       val methSym = mt.getSymbol
 
       // Maps each argument to one local variable index position
@@ -63,11 +63,11 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
       // generate code for statements
       mt.stats foreach {
-        cgStat(_)(ch, mapping, methSym.classSymbol.name)
+        cGenStat(_)(ch, mapping, methSym.classSymbol.name)
       }
 
       // Generate code for the return expression
-      cgExpr(mt.retExpr)(ch, mapping, methSym.classSymbol.name)
+      cGenExpr(mt.retExpr)(ch, mapping, methSym.classSymbol.name)
 
       // Based on the type of the return expression, return with a different
       // value
@@ -80,9 +80,9 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       ch.freeze
     }
 
-    def generateMainMethodCode(ch: CodeHandler, stmts: List[StatTree], cname: String): Unit = {
+    def cGenMain(ch: CodeHandler, stmts: List[StatTree], cname: String): Unit = {
       stmts foreach {
-        cgStat(_)(ch, Map(), cname)
+        cGenStat(_)(ch, Map(), cname)
       }
       ch << RETURN
 
@@ -91,24 +91,24 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
 
     // Generates code for a statement
-    def cgStat(statement: StatTree)
+    def cGenStat(statement: StatTree)
               (implicit ch: CodeHandler, mapping: LocalsPosMapping, cname: String): Unit = {
       statement match {
         case Block(stats) =>
-          stats foreach cgStat
+          stats foreach cGenStat
         case If(expr,thn,elz) =>
-          cgExpr(expr)
+          cGenExpr(expr)
           val endLabel = ch.getFreshLabel("end")
           val elseLabel = ch.getFreshLabel("else")
           ch << IfEq(elseLabel)
-          cgStat(thn)
+          cGenStat(thn)
           elz match {
             case None =>
               ch << Label(elseLabel)
             case Some(ins) =>
               ch << Goto(endLabel)
               ch << Label(elseLabel)
-              cgStat(ins)
+              cGenStat(ins)
               ch << Label(endLabel)
           }
 
@@ -117,16 +117,16 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           val endLabel = ch.getFreshLabel("end")
 
           ch << Label(beginLabel)
-          cgExpr(expr)
+          cGenExpr(expr)
           ch << IfEq(endLabel)
           // While body:
-          cgStat(stat)
+          cGenStat(stat)
           ch << Goto(beginLabel)
           ch << Label(endLabel)
 
         case p @ Println(expr) => // Invoking Java library code
           ch << GetStatic("java/lang/System", "out", "Ljava/io/PrintStream;")
-          cgExpr(expr)
+          cGenExpr(expr)
 
           // Now: The expression might either be an integer, a boolean, or a
           // string.  we have to invoke the right method accordingly
@@ -142,7 +142,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           case vsym: VariableSymbol =>
             mapping get vsym.name match {
               case Some(pos) => // Local variable
-                cgExpr(expr) // get the new value
+                cGenExpr(expr) // get the new value
                 vsym.getType match {
                   case TInt | TBoolean => ch << IStore(pos)
                   case TString | TIntArray | TClass(_) => ch << AStore(pos)
@@ -151,7 +151,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
               case None => // Field
                 ch << ALoad(0) // this
-                cgExpr(expr) // get the new value
+                cGenExpr(expr) // get the new value
                 ch << PutField(cname,vsym.name,typeToDescr(vsym.getType))
               // ch << Comment("Putting field " + vsym.name + " of class " + cname)
             }
@@ -168,8 +168,8 @@ object CodeGeneration extends Pipeline[Program, Unit] {
                 ch << GetField(cname,vsym.name,"[I") // We only deal with integer arrays
             }
 
-            cgExpr(index)
-            cgExpr(expr)
+            cGenExpr(index)
+            cGenExpr(expr)
 
             ch << IASTORE
           case _ =>
@@ -177,7 +177,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
         }
 
         case DoExpr(expr) =>
-          cgExpr(expr)
+          cGenExpr(expr)
           ch << POP // discard the result
       }
     }
@@ -186,32 +186,32 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     /**
      * Generates code for an expression
      */
-    def cgExpr(expr: ExprTree)
+    def cGenExpr(expr: ExprTree)
               (implicit ch: CodeHandler, mapping: LocalsPosMapping, cname: String): Unit = {
       expr match {
         case And(lhs,rhs) =>
           ch << ICONST_0
-          cgExpr(lhs)
+          cGenExpr(lhs)
 
           val theLabel = ch.getFreshLabel("alreadyFalse")
           ch << IfEq(theLabel)
 
           // Only care about the right hand side value
           ch << POP
-          cgExpr(rhs)
+          cGenExpr(rhs)
 
           ch << Label(theLabel)
 
         case Or(lhs,rhs) =>
           ch << ICONST_1
-          cgExpr(lhs)
+          cGenExpr(lhs)
 
           val theLabel = ch.getFreshLabel("alreadyTrue")
           ch << IfNe(theLabel)
 
           // Have to take a look at the right hand side
           ch << POP
-          cgExpr(rhs)
+          cGenExpr(rhs)
 
           ch << Label(theLabel)
 
@@ -220,7 +220,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             case TInt => genBinop(lhs,rhs,IADD,p)
             case _ =>
               ch << DefaultNew("java/lang/StringBuilder")
-              cgExpr(lhs)
+              cGenExpr(lhs)
 
               // append
               val lhsCallingType = lhs.getType match {
@@ -231,7 +231,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
               ch << LineNumber(p.line)
               ch << InvokeVirtual("java/lang/StringBuilder","append",lhsCallingType)
 
-              cgExpr(rhs)
+              cGenExpr(rhs)
               val rhsCallingType = rhs.getType match {
                 case TInt => "(I)Ljava/lang/StringBuilder;"
                 case _ => "(Ljava/lang/String;)Ljava/lang/StringBuilder;"
@@ -261,19 +261,19 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           genComp(lhs,rhs,theBytecode,trueLabel)
 
         case ar @ ArrayRead(arr,index) => // Luckily enough, always integers
-          cgExpr(arr)
-          cgExpr(index)
+          cGenExpr(arr)
+          cGenExpr(index)
           ch << LineNumber(ar.line)
           ch << IALOAD
 
         case al @ ArrayLength(arr) =>
-          cgExpr(arr)
+          cGenExpr(arr)
           ch << LineNumber(al.line)
           ch << ARRAYLENGTH
 
         case mc @ MethodCall(obj,meth,args) =>
-          cgExpr(obj)
-          args foreach cgExpr
+          cGenExpr(obj)
+          args foreach cGenExpr
 
           val msym = meth.getSymbol.asInstanceOf[MethodSymbol]
           val className = msym.classSymbol.name
@@ -308,7 +308,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
         case t @ This() => ch << LineNumber(t.line) << ALoad(0) // Where this is stored
         case nia @ NewIntArray(size) =>
-          cgExpr(size)
+          cGenExpr(size)
           ch << LineNumber(nia.line)
           ch << NewArray.primitive("T_INT")
 
@@ -317,7 +317,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           ch << DefaultNew(tpe.value)
 
         case n @ Not(exp) =>
-          cgExpr(exp)
+          cGenExpr(exp)
 
           val trueLabel = ch.getFreshLabel("ltrue")
           ch << LineNumber(n.line)
@@ -330,8 +330,8 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       }
 
       def genBinop(lhs: ExprTree, rhs: ExprTree, op: ByteCode, pos: Positioned) = {
-        cgExpr(lhs)
-        cgExpr(rhs)
+        cGenExpr(lhs)
+        cGenExpr(rhs)
         ch << LineNumber(pos.line)
         ch << op
       }
@@ -340,8 +340,8 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             branchInst: AbstractByteCode, trueLabel: String) = {
 
         ch << ICONST_1 // The true value, for use later
-        cgExpr(lhs)
-        cgExpr(rhs)
+        cGenExpr(lhs)
+        cGenExpr(rhs)
 
         ch << branchInst
         ch << POP
@@ -380,7 +380,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     mainClassFile.addDefaultConstructor
 
     // Now do the main method
-    generateMainMethodCode(
+    cGenMain(
       mainClassFile.addMainMethod.codeHandler,
       prog.main.stats,cs.name
     )
