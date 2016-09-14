@@ -31,7 +31,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
         val name = c.id.value
 
         if(name.equals(mcSym.name)) {
-          error("Class " + name + " has the same name as the main class.", c.id)
+          error(s"Class $name has the same name as the main class.", c.id)
         }
 
         if(name.equals("Object")) {
@@ -39,7 +39,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
         }
 
         global.lookupClass(name) match {
-          case Some(s) => error("Class " + name + " is defined more than once. First definition here: " + s.position, c.id)
+          case Some(s) => error(s"Class $name is defined more than once. First definition here: ${s.position}", c.id)
           case None =>
         }
 
