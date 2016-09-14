@@ -35,7 +35,6 @@ class MazeArray {
 
   def init(sze : Int) : MazeArray = {
     var i : Int;
-    var dummy : Bool;
 
     // Drawing characters. I use Unicode, but you may want to replace that by
     // something else if it breaks (note that scala.io.Source handles it just
@@ -87,7 +86,7 @@ class MazeArray {
 
     i = 0;
     while(!this.allMerged()) {
-      dummy = this.destroyIfNotConnected(wallIDs[i]);
+      do(this.destroyIfNotConnected(wallIDs[i]));
       i = i + 1;
     }
 
@@ -176,14 +175,13 @@ class MazeArray {
   def destroyIfNotConnected(wid : Int) : Bool = {
     var c1 : Int;
     var c2 : Int;
-    var dummy : Bool;
 
     c1 = this.cellOneOfWall(wid);
     c2 = this.cellTwoOfWall(wid);
 
     if(!(this.cellRepresentative(c1) == this.cellRepresentative(c2))) {
       walls[wid] = 0;
-      dummy = this.setRepresentative(c1, c2);
+      do(this.setRepresentative(c1, c2));
     }
 
     return true;

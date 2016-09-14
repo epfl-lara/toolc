@@ -11,15 +11,13 @@ class Tester {
 		var arr : Collection;
 		var i : Int;
 		//Use of dummies inevitable... Doesn't accept expressions that are "alone"
-		var dummyBool : Bool;
-		var dummyInt : Int;
 		var pos : Int;
 		
 		arr = (new ArrayListImpl()).init();
 		
 		i = 0;
 		while(i < 20){
-			dummyInt = arr.add(5*i*i-4*i);
+			do(arr.add(5*i*i-4*i));
 			i = i+1;
 		}
 		
@@ -27,14 +25,14 @@ class Tester {
 		pos = arr.search(64);
 		println("Element 64 is at position (-1 = not found): "+pos);
 		
-		dummyBool = arr.remove(64);
+		do(arr.remove(64));
 		
 		println("Element 64 removed");
 		println("Element 64 is at position (-1 = not found): "+arr.search(64));
 		
 		println(arr.toString());
 		
-		dummyBool = arr.insert(pos, 64);
+		do(arr.insert(pos, 64));
 		println("Element 64 inserted back");
 		println("Element 64 is at position (-1 = not found): "+arr.search(64));
 		
@@ -98,11 +96,10 @@ class ArrayListImpl extends Collection {
 	}
 	
 	def resizeIfNecessary(toAdd: Int) : Collection = {
-		var dummy : Collection;
 		var toGrow : Int;
 		toGrow = 50;
 		if(max-size < toAdd){
-			dummy = this.grow(toGrow);
+			do(this.grow(toGrow));
 		}
 		
 		return this;
@@ -134,8 +131,7 @@ class ArrayListImpl extends Collection {
 	}
 	
 	def add(obj: Int) : Int = {
-		var dummy : Collection;
-		dummy = this.resizeIfNecessary(1);
+		do(this.resizeIfNecessary(1));
 		
 		table[size] = obj;
 		size = size + 1;
@@ -192,16 +188,14 @@ class ArrayListImpl extends Collection {
 	def insert(index: Int, obj: Int) : Bool = {
 		 var valid : Bool;
 		 var i : Int;
-		 var dummy : Int;
-		 var dummy2 : Collection;
 		 
 		 valid = !(index < 0) && index < size;
 		 
 		 if(index == size){
-		 	dummy = this.add(obj);
+		 	do(this.add(obj));
 		 	valid = true;
 		 }else if(valid){
-		 	dummy2 = this.resizeIfNecessary(1);
+		 	do(this.resizeIfNecessary(1));
 		 	i = size-1;
 		 	
 		 	while(index-1 < i){

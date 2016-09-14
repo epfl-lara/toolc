@@ -7,8 +7,6 @@ object FSM {
 class FSMTester {
 	var fsm : FiniteStateMachine;
 	def run() : String = {
-		var dummy : Int;
-		var dummyBool : Bool;
 		println("Starting test");
 		println("This FSM checks if there are an even number of 1's in the string");
 		println("-------------");
@@ -18,41 +16,41 @@ class FSMTester {
 		
 		println("");
 		println("Adding nodes (the first added node is the starting node)");
-		dummy = this.addFinalNode("A");
-		dummy = this.addNode("B");
+		do(this.addFinalNode("A"));
+		do(this.addNode("B"));
 		
 		println("");
 		println("Adding edges");
-		dummy = this.addEdge("A", "A", 0);
-		dummy = this.addEdge("A", "B", 1);
-		dummy = this.addEdge("B", "B", 0);
-		dummy = this.addEdge("B", "A", 1);
+		do(this.addEdge("A", "A", 0));
+		do(this.addEdge("A", "B", 1));
+		do(this.addEdge("B", "B", 0));
+		do(this.addEdge("B", "A", 1));
 		
 		println("");
 		println("Running program 1");
-		dummyBool = this.step(0);
-		dummyBool = this.step(1);
-		dummyBool = this.step(1);
-		dummyBool = this.step(1);
-		dummyBool = this.step(1);
-		dummyBool = this.step(0);
-		dummyBool = this.step(1);
+		do(this.step(0));
+		do(this.step(1));
+		do(this.step(1));
+		do(this.step(1));
+		do(this.step(1));
+		do(this.step(0));
+		do(this.step(1));
 		
-		dummyBool = this.isFinal();
+		do(this.isFinal());
 		
-		dummyBool = fsm.reset();
+		do(fsm.reset());
 		
 		println("");
 		println("Running program 2");
-		dummyBool = this.step(0);
-		dummyBool = this.step(1);
-		dummyBool = this.step(1);
-		dummyBool = this.step(0);
-		dummyBool = this.step(1);
-		dummyBool = this.step(0);
-		dummyBool = this.step(1);
+		do(this.step(0));
+		do(this.step(1));
+		do(this.step(1));
+		do(this.step(0));
+		do(this.step(1));
+		do(this.step(0));
+		do(this.step(1));
 		
-		dummyBool = this.isFinal();
+		do(this.isFinal());
 		
 		return "";
 	}
