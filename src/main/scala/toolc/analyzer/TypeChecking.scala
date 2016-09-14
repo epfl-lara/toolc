@@ -73,7 +73,7 @@ object TypeChecking extends Pipeline[Program, Program] {
             case (TBoolean,TBoolean) => TBoolean
             case (TString,TString) => TBoolean
             case (TIntArray,TIntArray) => TBoolean
-            case (t1 @ TObject(_), t2 @ TObject(_)) /* if(t1.isSubTypeOf(t2) || t2.isSubTypeOf(t1)) */ => TBoolean
+            case (t1 @ TClass(_), t2 @ TClass(_)) /* if(t1.isSubTypeOf(t2) || t2.isSubTypeOf(t1)) */ => TBoolean
             case (t1 @ _, t2 @ _) =>
               error(s"Incompatible types in equality: $t1, $t2", expr)
               TError
@@ -90,7 +90,7 @@ object TypeChecking extends Pipeline[Program, Program] {
           val objType = tcExpr(obj, anyObject)
           
           objType match {
-            case TObject(os) =>
+            case TClass(os) =>
               os.lookupMethod(meth.value) match {
                 case Some(mSym) =>
                   // never too late :)
@@ -117,7 +117,7 @@ object TypeChecking extends Pipeline[Program, Program] {
         case True() => TBoolean
         case False() => TBoolean
         case Variable(id) => id.getType
-        case t @ This() => TObject(t.getSymbol)
+        case t @ This() => TClass(t.getSymbol)
         case NewIntArray(size) =>
           tcExpr(size,TInt)
           TIntArray
@@ -125,7 +125,7 @@ object TypeChecking extends Pipeline[Program, Program] {
         case New(tpe) =>
           tpe.getSymbol match {
             case cs: ClassSymbol =>
-              TObject(cs)
+              TClass(cs)
             case _ =>
               error("Expected: class name, found: " + tpe, tpe)
               TUntyped

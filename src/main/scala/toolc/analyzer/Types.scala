@@ -59,7 +59,7 @@ object Types {
     override def toString = "int[]"
   }
   
-  case class TObject(classSymbol: ClassSymbol) extends Type {
+  case class TClass(classSymbol: ClassSymbol) extends Type {
     override def isSubTypeOf(tpe: Type): Boolean = {
       def findInSymbol(cs1: ClassSymbol, cs2: ClassSymbol): Boolean = {
         if (cs1 == cs2) {
@@ -68,15 +68,15 @@ object Types {
           cs1.parent.exists(findInSymbol(_, cs2))
         }
       }
-      
+
       tpe match {
-        case TObject(cs2) => cs2.name.equals("Object") || findInSymbol(classSymbol, cs2)
+        case TClass(cs2) => cs2.name.equals("Object") || findInSymbol(classSymbol, cs2)
         case _ => false
       }
     }
     override def toString = classSymbol.name
   }
-  
+
   // special object to implement the fact that all objects are its subclasses
-  val anyObject = TObject(new ClassSymbol("Object"))
+  val anyObject = TClass(new ClassSymbol("Object"))
 }

@@ -12,7 +12,7 @@ object Trees {
   case class Identifier(value: String) extends Tree with Symbolic[Symbol] with Typed {
     override def getType: Type = getSymbol match {
       case cs: ClassSymbol =>
-        TObject(cs)
+        TClass(cs)
 
       case ms: MethodSymbol =>
         sys.error("Requesting type of a method identifier.")

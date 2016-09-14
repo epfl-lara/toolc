@@ -73,7 +73,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       // value
       ch << (mt.retExpr.getType match {
         case TInt | TBoolean => IRETURN
-        case TString | TIntArray | TObject(_) => ARETURN
+        case TString | TIntArray | TClass(_) => ARETURN
         case other => sys.error("Expected good type but got " + other)
       })
 
@@ -145,7 +145,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
                 cgExpr(expr) // get the new value
                 vsym.getType match {
                   case TInt | TBoolean => ch << IStore(pos)
-                  case TString | TIntArray | TObject(_) => ch << AStore(pos)
+                  case TString | TIntArray | TClass(_) => ch << AStore(pos)
                   case other => sys.error("Expected good type for store but got " + other)
                 }
 
@@ -289,7 +289,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             case vsym: VariableSymbol =>
               mapping get vsym.name match {
                 case Some(pos) => vsym.getType match {
-                  case TObject(_) | TIntArray | TString => ch << LineNumber(id.line) << ALoad(pos)
+                  case TClass(_) | TIntArray | TString => ch << LineNumber(id.line) << ALoad(pos)
                   case _ => ch << LineNumber(id.line) << ILoad(pos)
                 }
                 case None =>
@@ -353,7 +353,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       case TBoolean => "Z"
       case TIntArray => "[I"
       case TString => "Ljava/lang/String;"
-      case TObject(cs) => "L"+cs.name+";"
+      case TClass(cs) => "L"+cs.name+";"
       case _ => sys.error("Trying to get a descriptor for type: " + t)
     }
 
