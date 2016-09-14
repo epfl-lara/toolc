@@ -40,6 +40,9 @@ class Evaluator(ctx: Context, prog: Program) {
     case ArrayAssign(id, index, expr) =>
       val av = ectx.getVariable(id.value).asArray
       av.setIndex(evalExpr(ectx, index).asInt, evalExpr(ectx, expr).asInt)
+
+    case DoExpr(expr) =>
+      evalExpr(ectx, expr)
   }
 
   def evalExpr(ectx: EvaluationContext, e: ExprTree): Value = e match {

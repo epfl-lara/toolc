@@ -199,6 +199,13 @@ object Parser extends Pipeline[Iterator[Token], Program] {
         val expr = parseExpr
         eat(RPAREN(), SEMICOLON())
         Println(expr).setPos(pos)
+      case DO() =>
+        val pos = currentToken
+        readToken()
+        eat(LPAREN())
+        val expr = parseExpr
+        eat(RPAREN(), SEMICOLON())
+        DoExpr(expr).setPos(pos)
       case ID(_) =>
         val pos = currentToken
         val id = parseIdentifier

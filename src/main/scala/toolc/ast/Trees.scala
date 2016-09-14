@@ -71,6 +71,7 @@ object Trees {
   case class Println(expr: ExprTree) extends StatTree
   case class Assign(id: Identifier, expr: ExprTree) extends StatTree
   case class ArrayAssign(id: Identifier, index: ExprTree, expr: ExprTree) extends StatTree
+  case class DoExpr(e: ExprTree) extends StatTree
 
   // Expressions
   sealed trait ExprTree extends Tree with Typed

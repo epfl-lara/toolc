@@ -49,6 +49,7 @@ object Tokens {
   case class THIS()       extends Token // this
   case class NEW()        extends Token // new
   case class PRINTLN()    extends Token // println
+  case class DO()         extends Token // do(expr)
 
   // Identifiers
   case class ID(val value: String) extends Token {

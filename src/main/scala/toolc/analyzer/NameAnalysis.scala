@@ -307,6 +307,9 @@ object NameAnalysis extends Pipeline[Program, Program] {
         setISymbol(id)
         setESymbols(index)
         setESymbols(expr)
+
+      case DoExpr(expr) =>
+        setESymbols(expr)
     }
 
     def setISymbol(id: Identifier)(implicit ms: Option[MethodSymbol]) = {

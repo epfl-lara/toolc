@@ -138,7 +138,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
             case _        => ch << InvokeVirtual("java/io/PrintStream", "println", "(Ljava/lang/Object;)V")
           }
 
-        case a @ Assign(id,expr) => id.getSymbol match {
+        case Assign(id,expr) => id.getSymbol match {
           case vsym: VariableSymbol =>
             mapping get vsym.name match {
               case Some(pos) => // Local variable
@@ -159,7 +159,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           case _ =>
             sys.error("Internal error: symbol of assigned variable should have been of kind VariableSymbol.")
         }
-        case aa @ ArrayAssign(id,index,expr) => id.getSymbol match { // Almost the same thing
+        case ArrayAssign(id,index,expr) => id.getSymbol match { // Almost the same thing
           case vsym: VariableSymbol =>
             mapping get vsym.name match {
               case Some(pos) => ch << ALoad(pos)
@@ -175,6 +175,10 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           case _ =>
             sys.error("Internal error: symbol of assigned variable should have been of kind VariableSymbol.")
         }
+
+        case DoExpr(expr) =>
+          cgExpr(expr)
+          ch << POP // discard the result
       }
     }
 

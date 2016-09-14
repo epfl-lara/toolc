@@ -172,6 +172,8 @@ object TypeChecking extends Pipeline[Program, Program] {
         tcExpr(Variable(id), TIntArray)
         tcExpr(index, TInt)
         tcExpr(expr, TInt)
+      case DoExpr(expr) =>
+        tcExpr(expr)
     }
 
     prog.main.stats.foreach(tcStat)
