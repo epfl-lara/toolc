@@ -426,7 +426,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
     
     // checks whether the current token can be the start of a statement
     def statFirst: Boolean = currentToken match {
-      case LBRACE() | IF() | WHILE() | PRINTLN() | ID(_) => true
+      case LBRACE() | IF() | WHILE() | PRINTLN() | ID(_) | DO() => true
       case _ => false
     }
 

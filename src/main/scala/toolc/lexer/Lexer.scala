@@ -29,6 +29,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
     case "this"     => THIS()
     case "new"      => NEW()
     case "println"  => PRINTLN()
+    case "do"       => DO()
   }
 
 
