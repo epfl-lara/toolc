@@ -64,7 +64,7 @@ object Main {
     println(" --help        displays this help")
     println(" --tokens      displays the list of tokens")
     println(" --eval        evaluate the program directly instead of generating code")
-    println(" --main        displays the name of the main object anx exits")
+    println(" --main        displays the name of the main object and: exits")
     println(" -d <outdir>   generates class files in the specified directory")
   }
 
