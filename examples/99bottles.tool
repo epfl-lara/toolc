@@ -17,8 +17,7 @@ object NinetyNineBottles {
 
 class DrunkPirate {
     def sing() : Bool = {
-        var value : Int;
-        value = this.verse(99);
+        do(this.verse(99));
         return true;
     }
 

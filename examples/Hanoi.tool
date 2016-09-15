@@ -6,9 +6,8 @@ object Hanoi {
 
 class Tests {
 	def launch(): String = {
-		var b: Board;
-		b = this.test(3);
-		b = this.test(5);
+		do(this.test(3));
+		do(this.test(5));
 		
 		return "----- END of tests -----";
 	}

@@ -19,7 +19,6 @@ class PaperMulti{
     var maxLength : Int;
     var factorArray1 : Int[];
     var factorArray2 : Int[];
-    var aux : Int;
     var translate : Int;
     var initString : String;
     
@@ -36,9 +35,9 @@ class PaperMulti{
     println("Multiplication by hand");
     println("**********************");
     
-    aux = this.printNumber(maxLength,factor1," ");
-    aux = this.printNumber(maxLength,factor2,"*");
-    aux = this.printLine(maxLength);
+    do(this.printNumber(maxLength,factor1," "));
+    do(this.printNumber(maxLength,factor2,"*"));
+    do(this.printLine(maxLength));
     
     while (i < (factorArray2.length)){
       tempResult = 0;
@@ -48,11 +47,11 @@ class PaperMulti{
       if (i == 0) initString = " ";
       else initString = "+";
       
-      aux = this.printNumber(maxLength,tempResult,initString);
+      do(this.printNumber(maxLength,tempResult,initString));
       i = i + 1;
       translate = translate*10;
     }
-    aux = this.printLine(maxLength);
+    do(this.printLine(maxLength));
     println(" " + sum);
     println("**********************");
     

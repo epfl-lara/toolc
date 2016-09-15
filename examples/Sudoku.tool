@@ -9,7 +9,6 @@ class SudokuGrid {
     var grid_ : Int[];
     var currentLine_ : Int;
     var currentColumn_ : Int;
-    var garbage_ : Bool;
 
     def init() : SudokuGrid = {
         var i : Int;
@@ -27,36 +26,36 @@ class SudokuGrid {
 
     def test1() : String = {
         /* fill the sudoku grid */
-        garbage_ = this.set(0, 0, 1);
-        garbage_ = this.set(0, 5, 7);
-        garbage_ = this.set(0, 7, 9);
-        garbage_ = this.set(1, 1, 3);
-        garbage_ = this.set(1, 4, 2);
-        garbage_ = this.set(1, 8, 8);
-        garbage_ = this.set(2, 2, 9);
-        garbage_ = this.set(2, 3, 6);
-        garbage_ = this.set(2, 6, 5);
-        garbage_ = this.set(3, 2, 5);
-        garbage_ = this.set(3, 3, 3);
-        garbage_ = this.set(3, 6, 9);
-        garbage_ = this.set(4, 1, 1);
-        garbage_ = this.set(4, 4, 8);
-        garbage_ = this.set(4, 8, 2);
-        garbage_ = this.set(5, 0, 6);
-        garbage_ = this.set(5, 5, 4);
-        garbage_ = this.set(6, 0, 3);
-        garbage_ = this.set(6, 7, 1);
-        garbage_ = this.set(7, 1, 4);
-        garbage_ = this.set(7, 8, 7);
-        garbage_ = this.set(8, 2, 7);
-        garbage_ = this.set(8, 6, 3);
+        do(this.set(0, 0, 1));
+        do(this.set(0, 5, 7));
+        do(this.set(0, 7, 9));
+        do(this.set(1, 1, 3));
+        do(this.set(1, 4, 2));
+        do(this.set(1, 8, 8));
+        do(this.set(2, 2, 9));
+        do(this.set(2, 3, 6));
+        do(this.set(2, 6, 5));
+        do(this.set(3, 2, 5));
+        do(this.set(3, 3, 3));
+        do(this.set(3, 6, 9));
+        do(this.set(4, 1, 1));
+        do(this.set(4, 4, 8));
+        do(this.set(4, 8, 2));
+        do(this.set(5, 0, 6));
+        do(this.set(5, 5, 4));
+        do(this.set(6, 0, 3));
+        do(this.set(6, 7, 1));
+        do(this.set(7, 1, 4));
+        do(this.set(7, 8, 7));
+        do(this.set(8, 2, 7));
+        do(this.set(8, 6, 3));
 
         println("~~~~ Original sudoku ~~~~");
-        garbage_ = this.display();
+        do(this.display());
         println("Solving sudoku...");  
         if (this.solve()) {
             println("~~~~~ Solved sudoku ~~~~~");
-            garbage_ = this.display();
+            do(this.display());
         } else {
             println("Couldn't solve this sudoku :-(");
         }
@@ -87,11 +86,11 @@ class SudokuGrid {
         value = 1;
         while (value < 10 && result == false) {
             if (this.isCompatible(line, column, value)) {
-                garbage_ = this.set(line, column, value);
+                do(this.set(line, column, value));
                 if (this.solve()) {
                     result = true;
                 } else {
-                    garbage_ = this.set(line, column, 0);
+                    do(this.set(line, column, 0));
                     currentLine_ = line;
                     currentColumn_ = column;
                 }

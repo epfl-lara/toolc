@@ -19,16 +19,15 @@ class Collatz {
 	}
 	
     def check(n : Int) : String = {
-    	var void : String;
     	r = r + n + ", ";
     	if (n == 1)
     		println("");
     	else {
         	if (this.isEven(n) && !(n == 1)) {
-         	void = this.check(n / 2);
+         	  do(this.check(n / 2));
         	}
         	else {
-         	void = this.check(3 * n + 1);
+         	  do(this.check(3 * n + 1));
         	}
         }
         return r;

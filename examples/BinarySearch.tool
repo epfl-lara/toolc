@@ -14,11 +14,9 @@ class BS {
     // Invoke methods to initialize, print and search
     // for elements on the array
     def Start(sz : Int) : Int = {
-        var aux01 : Int;
-        var aux02 : Int;
 
-        aux01 = this.Init(sz);
-        aux02 = this.Print();
+        do(this.Init(sz));
+        do(this.Print());
 
         if (this.Search(8))
             println(1);

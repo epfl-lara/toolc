@@ -14,21 +14,20 @@ class HS {
 	var array : Int[]; // Array to sort
 	var initialSize : Int; // Size of the array
 	var size : Int;	// Size of the part of the array not sorted yet
-	var foo : Int; // Used to call method without useful return
 	
 	def start() : String = {
 		
-		foo = this.print();
+		do(this.print());
 		
-		foo = this.createHeap();
+		do(this.createHeap());
 		
-		foo = this.print();
+		do(this.print());
 		
 		while(1 < size){
 			size = size - 1;
-			foo = this.exchange(0, size);
-			foo = this.siftDown(0);
-			foo = this.print();
+			do(this.exchange(0, size));
+			do(this.siftDown(0));
+			do(this.print());
 		}
 		return "Sorting using HeapSort algorithm completed";
 	}
@@ -55,7 +54,7 @@ class HS {
 		k = size / 2 - 1;
 		
 		while(0-1 < k){
-			foo = this.siftDown(k);
+			do(this.siftDown(k));
 			k = k - 1;
 		}
 		
@@ -77,7 +76,7 @@ class HS {
 			if(array[desc] - 1 < array[k]) { // k have heap property
 				desc = size; // == return
 			}else{
-				foo = this.exchange(k, desc);
+				do(this.exchange(k, desc));
 				k = desc;
 				desc = 2 * k + 1;
 			}

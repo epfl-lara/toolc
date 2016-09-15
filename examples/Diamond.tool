@@ -1,6 +1,6 @@
 object Diamond {
 	def main() : Unit = {
-		if(new DiamondPrinter().do(6)) 
+		if(new DiamondPrinter().run(6)) 
 			println("Success!");
 		else 
 			println("Error");
@@ -8,7 +8,7 @@ object Diamond {
 }
 
 class DiamondPrinter {
-	def do(num: Int) : Bool = {
+	def run(num: Int) : Bool = {
 		var line : String;
 		var i : Int;
 		var w : Int;

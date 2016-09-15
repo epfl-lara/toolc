@@ -7,26 +7,25 @@ object Polymorphism {
 class PolymorphismTest {
   def run(): String = {
     var shape : Shape;
-    var unit : Int;
     
     shape = new Shape().init("blue");
-    unit = this.displayShape(shape);
+    do(this.displayShape(shape));
     
     shape = new Rectangle().initRectangle("red", 2, 4);
-    unit = this.displayShape(shape);
+    do(this.displayShape(shape));
 
     shape = new Square().initSquare("yellow", 2);
-    unit = this.displayShape(shape);
+    do(this.displayShape(shape));
 
     shape = new Circle().init("green");
-    unit = this.displayShape(shape);
+    do(this.displayShape(shape));
     
     println("---------------------");
-//    unit = shape.drawTwice(); //should give compilation error
-    unit = new Circle().initCircle("").drawTwice();
+//    do(shape.drawTwice()); //should give compilation error
+    do(new Circle().initCircle("").drawTwice());
     
     println("---------------------");
-    unit = new ReferenceTest().run();
+    do(new ReferenceTest().run());
 
     return "done";
   }
@@ -44,7 +43,6 @@ class PolymorphismTest {
 
 class ReferenceTest {
   def run(): Int = {
-    var unit : Int;
     
     var bool1 : Bool;
     var bool2 : Bool;
@@ -59,7 +57,7 @@ class ReferenceTest {
     
     bool1 = true;
     bool2 = false;
-    unit = this.swapBool(bool1, bool2);
+    do(this.swapBool(bool1, bool2));
     if(bool1) 
       println("bool1: true");
     else
@@ -71,36 +69,36 @@ class ReferenceTest {
     
     int1 = 1;
     int2 = 2;
-    unit = this.swapInt(int1, int2);
+    do(this.swapInt(int1, int2));
     println("int1: " + int1);
     println("int2: " + int2);
 
     intArr1 = new Int[1];
     intArr2 = new Int[2];
-    unit = this.swapIntArr(intArr1, intArr2);
+    do(this.swapIntArr(intArr1, intArr2));
     println("intArr1: " + intArr1.length);
     println("intArr2: " + intArr2.length);
     intArr1[0] = 1;
     intArr2[0] = 2;
-    unit = this.swapIntArrValue(intArr1, intArr2);
+    do(this.swapIntArrValue(intArr1, intArr2));
     println("intArr1val: " + intArr1[0]);
     println("intArr2val: " + intArr2[0]);
 
     string1 = "1";
     string2 = "2";
-    unit = this.swapString(string1, string2);
+    do(this.swapString(string1, string2));
     println("string1: " + string1);
     println("string2: " + string2);
-    unit = this.concatStringValue(string1, string2);
+    do(this.concatStringValue(string1, string2));
     println("string1val: " + string1);
     println("string2val: " + string2);
     
     shape1 = new Shape().init("1");
     shape2 = new Shape().init("2");
-    unit = this.swapShape(shape1, shape2);
+    do(this.swapShape(shape1, shape2));
     println("shape1: " + shape1.getColor());
     println("shape2: " + shape2.getColor());
-    unit = this.resetShape(shape1, shape2);
+    do(this.resetShape(shape1, shape2));
     println("shape1new: " + shape1.getColor());
     println("shape2set: " + shape2.getColor());
 
@@ -161,9 +159,8 @@ class ReferenceTest {
   }
 
   def resetShape(n1 : Shape, n2 : Shape) : Int = {
-    var unit : Int;
     n1 = new Shape().init("3");
-    unit = n2.setColor("3");
+    do(n2.setColor("3"));
     return 0;
   }
 }
@@ -200,10 +197,9 @@ class Rectangle extends Shape {
   var y : Int;
   
   def initRectangle(c: String, a: Int, b: Int) : Rectangle = {
-    var unit: Shape;
     x = a;
     y = b;
-    unit = this.init(c);
+    do(this.init(c));
     return this;
   }
   
@@ -238,8 +234,7 @@ class Rectangle extends Shape {
 
 class Square extends Rectangle {
   def initSquare(c: String, side: Int) : Square = {
-    var unit: Shape;
-    unit = this.initRectangle(c, side, side);
+    do(this.initRectangle(c, side, side));
     return this;
   }
 
@@ -250,8 +245,7 @@ class Square extends Rectangle {
 
 class Circle extends Shape {
   def initCircle(c: String) : Circle = {
-    var unit: Shape;
-    unit = this.init(c);
+    do(this.init(c));
     return this;
   }
   

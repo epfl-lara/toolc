@@ -14,10 +14,9 @@ class DijkstraExample {
     var i: Int;
     var test: Int;
     var neighbor: Node;
-    var unit: Int;
     graph = new Graph().init();
     stop = false;
-    unit = graph.get(0).setDistance(0); // Distance from source to source
+    do(graph.get(0).setDistance(0)); // Distance from source to source
     while (this.hasUnvisited(graph) && !stop) {
       current = this.findMinDistance(graph);
       println("visited: " + current.visit());
@@ -29,8 +28,8 @@ class DijkstraExample {
             test = current.distance() + neighbors[i];
             neighbor = graph.get(i);
             if (test < neighbor.distance()) {
-              unit = neighbor.setDistance(test);
-              unit = neighbor.setPrevious(current.index());
+              do(neighbor.setDistance(test));
+              do(neighbor.setPrevious(current.index()));
             }
           }
           i = i + 1;

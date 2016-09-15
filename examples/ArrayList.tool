@@ -10,7 +10,6 @@ class Tester {
 	def exec() : String = {
 		var arr : Collection;
 		var i : Int;
-		//Use of dummies inevitable... Doesn't accept expressions that are "alone"
 		var pos : Int;
 		
 		arr = (new ArrayListImpl()).init();

@@ -83,7 +83,6 @@ class BarGraph {
     def print() : Bool = {
         var max : Int;        
         var i : Int;
-        var success : Bool;
         max = 0;
         i = 0;
 
@@ -96,7 +95,7 @@ class BarGraph {
 
         i = max;
         while (0 - 1 < i) {
-            success = this.printLine(i);
+            do(this.printLine(i));
             i = i - 1;
         }
 

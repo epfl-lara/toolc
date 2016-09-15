@@ -49,7 +49,6 @@ class bubbleSort {
     }
 	
 	def init() : Int = {
-	var a : Int;
 	n=10;
 	tab = new Int[10];
 	tab[0]=2;
@@ -62,10 +61,10 @@ class bubbleSort {
 	tab[7]=2;
 	tab[8]=10;
 	tab[9]=1733;
-	a=this.print();
-	a=this.sort();
+	do(this.print());
+	do(this.sort());
 	println("Ok");
-	a=this.print();
+	do(this.print());
 	return 0;
 	}
 

@@ -21,11 +21,10 @@ class ExampleRun {
         // assume it's left-associative, as it's the easiest for us to do (no back-tracking)
 
         var program : Program;
-        var success : Bool;
 
         program = new Program().init().add("Q").add("H").add("Q").add("+")
                                       .add("+").add("+").add("9").add("+");
-        success = new Interpreter().eval(program);
+        do(new Interpreter().eval(program));
 
         return true;
     }

@@ -64,7 +64,7 @@ class Fibonacci {
 
 		println("Executing program : " + program.toString());
 		println("");
-		println("Exit code (not working) = " + program.do(variables));
+		println("Exit code (not working) = " + program.eval(variables));
 		
 		return this;
 	}
@@ -82,7 +82,7 @@ class Fibonacci {
  */
 
 class Tree {
-	def do(variables : StringIntMap) : Int = {
+	def eval(variables : StringIntMap) : Int = {
 		return 1;
 	}
 	
@@ -119,7 +119,7 @@ class Print extends SingleStatement {
 		return this;
 	}
 	
-	def do(variables : StringIntMap) : Int = {
+	def eval(variables : StringIntMap) : Int = {
 		println(msg + variables.get(varID));
 		
 		return 1;
@@ -141,10 +141,10 @@ class Assign extends SingleStatement {
 		return this;
 	}
 	
-	def do(variables : StringIntMap) : Int = {
+	def eval(variables : StringIntMap) : Int = {
 		var tmp : StringIntMap;
 		
-		tmp = variables.set(varID, expr.do(variables));
+		tmp = variables.set(varID, expr.eval(variables));
 		
 		return 1;
 	}
@@ -193,7 +193,7 @@ class Block extends Statement {
 		return this;
 	}
 	
-	def do(variables : StringIntMap) : Int = {
+	def eval(variables : StringIntMap) : Int = {
 		var n : StatementNode;
 		var done : Bool;
 		var last : Int;
@@ -205,7 +205,7 @@ class Block extends Statement {
 			n = first;
 			
 			while(! done) {
-				last = n.getStatement().do(variables);
+				last = n.getStatement().eval(variables);
 				
 				if (n.hasNext()) {
 					n = n.getNext();
@@ -257,15 +257,15 @@ class IfThenElse extends Statement {
 		return this;
 	}
 	
-	def do(variables : StringIntMap) : Int = {
+	def eval(variables : StringIntMap) : Int = {
 		var r : Int;
 		
 		r = 1;
 		
-		if (expr.do(variables) == 0) {
-			r = elze.do(variables);
+		if (expr.eval(variables) == 0) {
+			r = elze.eval(variables);
 		} else {
-			r = then.do(variables);
+			r = then.eval(variables);
 		}
 		
 		return r;
@@ -287,11 +287,11 @@ class While extends Statement {
 		return this;
 	}
 	
-	def do(variables : StringIntMap) : Int = {
+	def eval(variables : StringIntMap) : Int = {
 		var r : Int;
 		
-		while (! (expr.do(variables) == 0)) {
-			r = body.do(variables);
+		while (! (expr.eval(variables) == 0)) {
+			r = body.eval(variables);
 		}
 		
 		return r;
@@ -317,14 +317,14 @@ class For extends Statement {
 		return this;
 	}
 	
-	def do(variables : StringIntMap) : Int = {
+	def eval(variables : StringIntMap) : Int = {
 		var r : Int;
 		
-		r = init.do(variables);
+		r = init.eval(variables);
 		
-		while (! (expr.do(variables) == 0)) {
-			r = body.do(variables);
-			r = step.do(variables);
+		while (! (expr.eval(variables) == 0)) {
+			r = body.eval(variables);
+			r = step.eval(variables);
 		}
 		
 		return r;
@@ -355,7 +355,7 @@ class IntLiteral extends Expression {
 		return this;
 	}
 	
-	def do(variables : StringIntMap) : Int = {
+	def eval(variables : StringIntMap) : Int = {
 		return i;
 	}
 	
@@ -375,8 +375,8 @@ class Plus extends Expression {
 		return this;
 	}
 	
-	def do(variables : StringIntMap) : Int = {
-		return lhs.do(variables) + rhs.do(variables);
+	def eval(variables : StringIntMap) : Int = {
+		return lhs.eval(variables) + rhs.eval(variables);
 	}
 	
 	def toString() : String = {
@@ -395,8 +395,8 @@ class Minus extends Expression {
 		return this;
 	}
 	
-	def do(variables : StringIntMap) : Int = {
-		return lhs.do(variables) - rhs.do(variables);
+	def eval(variables : StringIntMap) : Int = {
+		return lhs.eval(variables) - rhs.eval(variables);
 	}
 	
 	def toString() : String = {
@@ -415,12 +415,12 @@ class GreaterThan extends Expression {
 		return this;
 	}
 	
-	def do(variables : StringIntMap) : Int = {
+	def eval(variables : StringIntMap) : Int = {
 		var r : Int;
 		
 		r = 0;
 		
-		if (rhs.do(variables) < lhs.do(variables))
+		if (rhs.eval(variables) < lhs.eval(variables))
 			r = 1;
 		
 		return r;
@@ -440,12 +440,12 @@ class Not extends Expression {
 		return this;
 	}
 	
-	def do(variables : StringIntMap) : Int = {
+	def eval(variables : StringIntMap) : Int = {
 		var r : Int;
 		
 		r = 0;
 		
-		if (expr.do(variables) == 0)
+		if (expr.eval(variables) == 0)
 			r = 1;
 		
 		return r;
@@ -465,7 +465,7 @@ class Var extends Expression {
 		return this;
 	}
 	
-	def do(variables : StringIntMap) : Int = {
+	def eval(variables : StringIntMap) : Int = {
 		return variables.get(varID);
 	}
 	
@@ -572,13 +572,11 @@ class StringIntMap {
 		
 	
 	def set(varID_ : String, value_ : Int) : StringIntMap = {
-		var tmp : StringIntTuple;
-		var tmpM : StringIntMap;
 		
 		if (this.has(varID_)) {
-			tmp = this.get0(varID_).setSecond(value_);
+			do(this.get0(varID_).setSecond(value_));
 		} else {
-			tmpM = this.add(new StringIntTuple().init(varID_, value_));
+			do(this.add(new StringIntTuple().init(varID_, value_)));
 		}
 		
 		return this;
@@ -610,13 +608,11 @@ class StringIntMap {
 	}
 	
 	def add(t : StringIntTuple) : StringIntMap = {
-		var tmp : TupleNode;
-		
 		if (empty) {
 			first = new TupleNode().init(t);
 			empty = false;
 		} else {
-			tmp = first.add(new TupleNode().init(t));
+			do(first.add(new TupleNode().init(t)));
 		}
 		
 		return this;
@@ -653,9 +649,7 @@ class TupleNode {
 	}
 	
 	def add(n : TupleNode) : TupleNode = {
-		var tmp : TupleNode;
-		
-		tmp = this.last().setNext(n);
+		do(this.last().setNext(n));
 		
 		return this;
 	}

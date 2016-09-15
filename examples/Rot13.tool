@@ -42,7 +42,8 @@ class Decoder {
     else if (int == 24) char = "Y";
     else if (int == 25) char = "Z";
     else {
-      char = "*"; println("ERROR: character out of range");
+      char = "*";
+       println("ERROR: character out of range");
     }
     return char;
   }

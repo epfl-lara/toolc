@@ -62,7 +62,6 @@ class PolynomialOperations{
     var partResult : Int;
     var newNum : Int[];
     var i : Int;
-    var aux : Int;
     var resultArray : Int[];
     var newResultArray : Int[];
     
@@ -76,10 +75,10 @@ class PolynomialOperations{
       else newNum[i] = 0;  
       i = i + 1;
     }
-    aux = this.printPoly(newNum,false);
-    aux = this.printLine(22);
+    do(this.printPoly(newNum,false));
+    do(this.printLine(22));
     newNum = this.subtract(theNumerator,newNum);
-    aux = this.printPoly(newNum,true);
+    do(this.printPoly(newNum,true));
     
     if ((0-1) < (newNum.length-theDenominator.length)){
       resultArray = this.divide(newNum,theDenominator);
