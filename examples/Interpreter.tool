@@ -7,7 +7,7 @@ class Fibonacci {
 		var variables : StringIntMap;
 		
 		/*
-		 * The interpreter will run the equivalent of the fibonacci.while program.
+		 * The interpreter will run the equivalent of the fibonacci.while ast.
 		 * 
 		 * The inheritance graph is similar to the one we had for the whilelang project.
 		 * 
@@ -31,7 +31,7 @@ class Fibonacci {
 		
 		var forLoop : Statement;
 		
-		var program : Statement;
+		var ast : Statement;
 		
 		variables = new StringIntMap().init();
 		
@@ -57,12 +57,12 @@ class Fibonacci {
 		                         new Assign().init("i", new Minus().init(var_i, new IntLiteral().init(1))),
 		                         body);
 		
-		program = new Block().init().add(init_x).add(init_y).add(init_c).add(forLoop);
+		ast = new Block().init().add(init_x).add(init_y).add(init_c).add(forLoop);
 		
 
-		println("Executing program : " + program.toString());
+		println("Executing ast : " + ast.toString());
 		println("");
-		println("Exit code (not working) = " + program.eval(variables));
+		println("Exit code (not working) = " + ast.eval(variables));
 		
 		return this;
 	}
@@ -559,7 +559,7 @@ class StringIntMap {
 	def get0(varID_ : String) : StringIntTuple = {
 		var n : TupleNode;
 		
-		n = first;
+		if (!empty) n = first;
 		
 		while (! n.getTuple().firstIs(varID_)) {
 			n = n.getNext();
@@ -586,7 +586,7 @@ class StringIntMap {
 		var done : Bool;
 		
 		b = false;
-		n = first;
+		if (! empty) n = first;
 		done = false;
 		
 		if (! empty) {

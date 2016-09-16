@@ -11,37 +11,37 @@ program HQ9PlusPlus {
 
 class ExampleRun {
     def run() : Bool = {
-        // for the purpose of this example run, we're going to run this program: QHQ+++9+
+        // for the purpose of this example run, we're going to run this ast: QHQ+++9+
         // it's tricky because of '+++'. The specification of HQ9++, which can be found at
         // http://esoteric.voxelperfect.net/wiki/HQ9_Plus_Plus
         // doesn't specify whether '+' is left or right-associative, so we'll just
         // assume it's left-associative, as it's the easiest for us to do (no back-tracking)
 
-        var program : Program;
+        var ast : Ast;
 
-        program = new Program().init().add("Q").add("H").add("Q").add("+")
+        ast = new Ast().init().add("Q").add("H").add("Q").add("+")
                                       .add("+").add("+").add("9").add("+");
-        do(new Interpreter().eval(program));
+        do(new Interpreter().eval(ast));
 
         return true;
     }
 }
 
-class Program {
-    // we handle programs up to 16KB in size
+class Ast {
+    // we handle asts up to 16KB in size
     // .. which is probably more than enough
     var data: Int[];
     var size: Int;
     var converter: Converter;
 
-    def init() : Program = {
+    def init() : Ast = {
         size = 0;
         data = new Int[16 * 1024];
         converter = new Converter();
         return this;
     }
 
-    def add(ch: String) : Program = {
+    def add(ch: String) : Ast = {
         data[size] = converter.toAscii(ch);
         size = size + 1;
         return this;
@@ -77,7 +77,7 @@ class ObjectOfANewSubClassOfTheGenericSuperClass {
 }
 
 class Interpreter {
-    def eval(program: Program) : Bool = {
+    def eval(ast: Ast) : Bool = {
         var accumulator : Int;
         var curr : Int;
         var sym : Int;
@@ -87,16 +87,16 @@ class Interpreter {
         accumulator = 0;
         curr = 0;
 
-        while (curr < program.getSize()) {
-            sym = program.get(curr);
+        while (curr < ast.getSize()) {
+            sym = ast.get(curr);
             if(sym == 72) { // H = Print Hello, world!
                 println("Hello, world!");
-            } else if(sym == 81) { // Q = Print the program's source code
-                println(program.toString());
+            } else if(sym == 81) { // Q = Print the ast's source code
+                println(ast.toString());
             } else if(sym == 57) { // 9 = Print 99 bottles of beer
                 success = new DrunkPirate().sing();
             } else if(sym == 43) { // + = well, it depends
-                if(program.get(curr + 1) == 43) { 
+                if(ast.get(curr + 1) == 43) { 
                     // ++ = increment the accumulator twice and [...] read the spec!
                     curr = curr + 1;
                     accumulator = accumulator + 2; 

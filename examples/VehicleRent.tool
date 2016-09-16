@@ -84,6 +84,7 @@ class Client {
       clientNumber = nb;
       name = n;
       msg = "CREATE : Client " + clientNumber + " (" + name + ") created!";
+      rent = false;
       
       return msg;
    }
@@ -182,6 +183,7 @@ class Car extends Vehicle {
       brand = br;
       milage = 0;
       nbSeats = seats;
+      rented = false;
       return "CAR ADDED: #" + number + ", " + brand + ", " + nbSeats + " seats";
    }
    
@@ -201,6 +203,7 @@ class Truck extends Vehicle {
       brand = br;
       milage = 0;
       maxWeight = weight;
+      rented = false;
       return "TRUCK ADDED : #" + number + ", " + brand + ", " + maxWeight + "t";
    }
    

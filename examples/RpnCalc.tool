@@ -107,6 +107,7 @@ class Number {
 	
 	def set(v: Int) : Number = {
 		value = v;
+        NaN = false;
 		return this;
 	}
 	

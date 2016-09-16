@@ -1,5 +1,5 @@
 program Factorial {
-    println(new Fact().computeFactorial(10));
+    println("10! = " + new Fact().computeFactorial(10));
 }
 
 class Fact {
