@@ -12,13 +12,11 @@ class QS {
     // Invoke the Initialization, Sort and Printing
     // Methods
     def Start(sz : Int) : Int = {
-        var aux01 : Int;
-        aux01 = this.Init(sz);
-        aux01 = this.Print();
+        do(this.Init(sz));
+        do(this.Print());
         println(9999);
-        aux01 = size - 1 ;
-        aux01 = this.Sort(0,aux01);
-        aux01 = this.Print();
+        do(this.Sort(0,size - 1));
+        do(this.Print());
         return 9999;
     }
 
