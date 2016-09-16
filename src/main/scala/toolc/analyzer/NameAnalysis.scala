@@ -364,7 +364,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
           case Some(cs) =>
             t.setSymbol(cs)
           case None =>
-            error("Cannot use 'this' in the main method", t)
+            error("Cannot use 'this' in the main object", t)
         }
 
       case New(id @ Identifier(typeName)) =>

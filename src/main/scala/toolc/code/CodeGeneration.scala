@@ -74,7 +74,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       ch << (mt.retExpr.getType match {
         case TInt | TBoolean => IRETURN
         case TString | TIntArray | TClass(_) => ARETURN
-        case other => sys.error("Expected good type but got " + other)
+        case other => sys.error(s"Expected good type but got $other")
       })
 
       ch.freeze
@@ -131,12 +131,13 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           // Now: The expression might either be an integer, a boolean, or a
           // string.  we have to invoke the right method accordingly
           ch << LineNumber(p.line)
-          expr.getType match {
-            case TBoolean => ch << InvokeVirtual("java/io/PrintStream", "println", "(Z)V")
-            case TInt     => ch << InvokeVirtual("java/io/PrintStream", "println", "(I)V")
-            case TString  => ch << InvokeVirtual("java/io/PrintStream", "println", "(Ljava/lang/String;)V")
-            case _        => ch << InvokeVirtual("java/io/PrintStream", "println", "(Ljava/lang/Object;)V")
+          val typeStr = expr.getType match {
+            case TBoolean => "(Z)V"
+            case TInt     => "(I)V"
+            case TString  => "(Ljava/lang/String;)V"
+            case _        => "(Ljava/lang/Object;)V"
           }
+          ch << InvokeVirtual("java/io/PrintStream", "println", typeStr)
 
         case Assign(id,expr) => id.getSymbol match {
           case vsym: VariableSymbol =>
@@ -146,7 +147,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
                 vsym.getType match {
                   case TInt | TBoolean => ch << IStore(pos)
                   case TString | TIntArray | TClass(_) => ch << AStore(pos)
-                  case other => sys.error("Expected good type for store but got " + other)
+                  case other => sys.error(s"Expected good type for store but got $other")
                 }
 
               case None => // Field
@@ -379,7 +380,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     mainClassFile.setSourceFile(shortName)
     mainClassFile.addDefaultConstructor
 
-    // Now do the main method
+    // Now do the main object
     cGenMain(
       mainClassFile.addMainMethod.codeHandler,
       prog.main.stats,cs.name
