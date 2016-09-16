@@ -1,7 +1,5 @@
-object Dijkstra {
-  def main() : Unit = {
+program Dijkstra {
     println("distance from source (0) to target (9): " + new DijkstraExample().run());
-  }
 }
 
 class DijkstraExample {

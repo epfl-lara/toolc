@@ -1,7 +1,5 @@
-object Interpreter {
-	def main() : Unit = {
-		println(new Fibonacci().init().toString());
-	}
+program Interpreter {
+    println(new Fibonacci().init().toString());
 }
 
 class Fibonacci {

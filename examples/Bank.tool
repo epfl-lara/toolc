@@ -1,7 +1,5 @@
-object Bank {
-	def main() : Unit = {
-		println (new Simulation().init());
-	}
+program Bank {
+    println (new Simulation().init());
 }
 
 class Simulation {

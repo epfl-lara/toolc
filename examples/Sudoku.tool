@@ -1,7 +1,5 @@
-object Sudoku {
-    def main() : Unit = {
-        println(new SudokuGrid().init().test1());
-    }
+program Sudoku {
+    println(new SudokuGrid().init().test1());
 }
 
 class SudokuGrid {

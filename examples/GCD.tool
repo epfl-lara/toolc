@@ -1,13 +1,9 @@
-object MainObject {
-	def main() : Unit = {
-		{
-			println(new GreatestCommonDivisor().init(28,7856));
-			println(new GreatestCommonDivisor().init(344,873));
-			println(new GreatestCommonDivisor().init(456,0));
-			println(new GreatestCommonDivisor().init(33,87));
-			println(new GreatestCommonDivisor().init(47,6853));
-		}
-	}
+program GCD {
+    println(new GreatestCommonDivisor().init(28,7856));
+    println(new GreatestCommonDivisor().init(344,873));
+    println(new GreatestCommonDivisor().init(456,0));
+    println(new GreatestCommonDivisor().init(33,87));
+    println(new GreatestCommonDivisor().init(47,6853));
 }
 
 class GreatestCommonDivisor {
@@ -54,4 +50,3 @@ class GreatestCommonDivisor {
 	}
 }
 
-/* Troll Comment */

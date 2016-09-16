@@ -1,7 +1,5 @@
-object Sort {
-    def main() : Unit = {
-        println(new bubbleSort().init());        
-    }
+program Sort {
+    println(new bubbleSort().init());        
 }
  
 

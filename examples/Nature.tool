@@ -1,9 +1,7 @@
 /*small test programm in tool with basic class inheritance*/
 
-object Nature {
-	def main() : Unit = {
-		println ( new Setup().start(8, "X") );
-	}
+program Nature {
+    println ( new Setup().start(8, "X") );
 }
 
 //class

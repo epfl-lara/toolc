@@ -1,7 +1,5 @@
-object ComplexNumbers {
-  def main () : Unit = {
+program ComplexNumbers {
     println(new ComplexNumber().init(3, 5).multiply(new ComplexNumber().init(4, 6)).inverse().print());
-  }
 }
 
 class ComplexNumber {

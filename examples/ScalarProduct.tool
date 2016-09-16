@@ -1,7 +1,9 @@
-object ScalarProduct {
-	def main() : Unit = {
-		if(new Sim().start()) {println("Ok");} else {println("error");}        
-	}
+program ScalarProduct {
+    if(new Sim().start()) {
+        println("Ok");
+    } else {
+        println("error");
+    }
 }
 
 class Sim {

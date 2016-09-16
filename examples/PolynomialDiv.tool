@@ -1,10 +1,5 @@
-object PolynomialDiv {
-  def main() : Unit = {
-    if(new PolynomialOperations().init()){
-    }
-
-  }
-  
+program PolynomialDiv {
+    do(new PolynomialOperations().init());
 }
 
 /*Class for showing polynomial division.

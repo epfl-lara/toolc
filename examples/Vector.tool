@@ -1,16 +1,14 @@
-object Vector {
-    def main() : Unit = {{
-        println("--- Vector : addition test ---");
-        println(new Vect3().test1());
-        println("--- Vector : dot product test ---");
-        println(new Vect3().test2());
-        println("--- Vector : cross product test ---");
-        println(new Vect3().test3());
-        println("--- Vector : negative / multiplication test ---");
-        println(new Vect3().test4());
-        println("--- Vector : substraction test ---");
-        println(new Vect3().test5());
-    }}
+program Vector {
+    println("--- Vector : addition test ---");
+    println(new Vect3().test1());
+    println("--- Vector : dot product test ---");
+    println(new Vect3().test2());
+    println("--- Vector : cross product test ---");
+    println(new Vect3().test3());
+    println("--- Vector : negative / multiplication test ---");
+    println(new Vect3().test4());
+    println("--- Vector : substraction test ---");
+    println(new Vect3().test5());
 }
 
 class Vect3 {

@@ -1,7 +1,5 @@
-object Factorial {
-    def main() : Unit = {
-        println(new Fact().computeFactorial(10));        
-    }
+program Factorial {
+    println(new Fact().computeFactorial(10));
 }
 
 class Fact {

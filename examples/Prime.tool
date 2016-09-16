@@ -1,9 +1,7 @@
 //give the prime numbers less than 100
 
-object Prime {
-	def main() : Unit = {
-		println(new Algo().start(100));
-	}
+program Prime {
+    println(new Algo().start(100));
 }
 
 //classes

@@ -1,12 +1,8 @@
-object treeMain {
-    def main() : Unit = {
-    	{
-        println(new Top().foo() + "expected : Top");
-        println(new UnderTop().foo() + "expected : UnderTop");
-        println(new Bot().foo() + "expected : UnderTop"); 
-        println(new Bot().bar() + "expected : Top") ;
-        }     
-    }
+program treeMain {
+    println(new Top().foo() + "expected : Top");
+    println(new UnderTop().foo() + "expected : UnderTop");
+    println(new Bot().foo() + "expected : UnderTop"); 
+    println(new Bot().bar() + "expected : Top") ;
 }
 
 class Top { 
@@ -27,7 +23,6 @@ class UnderTop extends Top  {
 		println("foo in UnderTop");
 		return 1 ; 
 	}
-	
 }
 
 class Bot extends UnderTop {

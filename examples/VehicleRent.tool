@@ -2,10 +2,8 @@
 // It can specially be used to test inheritance (the Car and Truck 
 // classes extends from the Vehicle class) 
 
-object VehicleRent {
-   def main() : Unit = {
-      println(new RentingAgency().exampleDay());
-   }
+program VehicleRent {
+    println(new RentingAgency().exampleDay());
 }
 
 // The renting agecy

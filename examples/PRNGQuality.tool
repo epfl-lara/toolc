@@ -1,8 +1,5 @@
-
-object PRNGQualityTest {
-    def main() : Unit = {
-        if(!new PRNGQualityTestRunner().run()) { println("fail"); }
-    }
+program PRNGQualityTest {
+    if(!new PRNGQualityTestRunner().run()) { println("fail"); }
 }
 
 class PRNGQualityTestRunner {

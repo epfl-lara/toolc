@@ -1,7 +1,5 @@
-object FizzBuzz {
-	def main() : Unit = {
-		println(new FizzBuzzCounter().doYourThing(0,100));
-	}
+program FizzBuzz {
+    println(new FizzBuzzCounter().doYourThing(0,100));
 }
 
 class FizzBuzzCounter {

@@ -1,7 +1,5 @@
-object QuickSort {
-    def main() : Unit = {
-        println(new QS().Start(10));
-    }
+program QuickSort {
+    println(new QS().Start(10));
 }
 
 // This class contains the array of integers and

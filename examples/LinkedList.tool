@@ -1,7 +1,5 @@
-object LinkedMain {
-	def main() : Unit = {
-		println(new LinkedList().test());
-	}
+program LinkedMain {
+    println(new LinkedList().test());
 }
 
 class LinkedList {

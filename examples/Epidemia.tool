@@ -2,10 +2,8 @@
  * Implements epidemy simulation.
 */
 
-object Epidemia {
-	def main() : Unit = {
-		println(new City().init(925000, 75000, new Malady().init(2, 3, 9)).run(200).printResults());
-	}
+program Epidemia {
+    println(new City().init(925000, 75000, new Malady().init(2, 3, 9)).run(200).printResults());
 }
 
 class Malady {

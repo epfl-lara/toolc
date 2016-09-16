@@ -1,12 +1,10 @@
-object Calendar {
-    def main() : Unit = {
-        println("~~~ October 2011 ~~~");
-        println(new CalendarImpl().init(10, 2011).display());
-        println("~~ September 1988 ~~");
-        println(new CalendarImpl().init(9, 1988).display());
-        println("~~ February 2000 ~~~");
-        println(new CalendarImpl().init(2, 2000).display());
-    }
+program Calendar {
+    println("~~~ October 2011 ~~~");
+    println(new CalendarImpl().init(10, 2011).display());
+    println("~~ September 1988 ~~");
+    println(new CalendarImpl().init(9, 1988).display());
+    println("~~ February 2000 ~~~");
+    println(new CalendarImpl().init(2, 2000).display());
 }
 
 class CalendarImpl {

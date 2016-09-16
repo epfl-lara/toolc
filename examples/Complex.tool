@@ -1,13 +1,7 @@
-object Complex {
-	def main() : Unit = {
-		{
-			{
-			println(new ComplexOperat().init(new ComplexRepr().init(1,1), new ComplexRepr().init(1,1),0).Print());
-			println(new ComplexOperat().init(new ComplexRepr().init(1,1), new ComplexRepr().init(1,1),1).Print());
-			println(new ComplexOperat().init(new ComplexRepr().init(1,1), new ComplexRepr().init(1,1),2).Print());
-			}
-		}
-	}
+program Complex {
+    println(new ComplexOperat().init(new ComplexRepr().init(1,1), new ComplexRepr().init(1,1),0).Print());
+    println(new ComplexOperat().init(new ComplexRepr().init(1,1), new ComplexRepr().init(1,1),1).Print());
+    println(new ComplexOperat().init(new ComplexRepr().init(1,1), new ComplexRepr().init(1,1),2).Print());
 }
 
 

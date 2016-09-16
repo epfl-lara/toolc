@@ -1,7 +1,9 @@
-object Shapes {
-	def main() : Unit = {
-		if (new GenerateShapes().start()) {println("Ok");} else {println("Error");}		        
-	}
+program Shapes {
+    if (new GenerateShapes().start()) {
+        println("Ok");
+    } else {
+        println("Error");
+    }
 }
 
 class GenerateShapes {

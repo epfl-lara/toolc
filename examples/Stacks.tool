@@ -1,7 +1,5 @@
-object Stacks {
-  def main () : Unit = {
+program Stacks {
     println(new Stack().init(100).push(5).push(3).pop());
-  }
 }
 
 class Stack {

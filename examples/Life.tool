@@ -1,11 +1,9 @@
 // This program must be run in a VT100 compatible terminal to get the
 // intended result. (EDIT search for 'clear' and uncomment if needed.)
 
-object Life {
-  def main() : Unit = {
+program Life {
     /* runs conway's game of life; see run() to change patterns */
     println(new Game().init().run(10)); // 10000 iterations
-  }
 }
 
 // NOTE: In the code that follows, there many spurious return

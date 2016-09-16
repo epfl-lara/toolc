@@ -1,13 +1,9 @@
-object Multiplicator {
-  def main() : Unit = {
+program Multiplicator {
     if(new PaperMulti().showMultiplication(12345,9876)){
       println("Completed successfully!");
+    } else {
+      println("Fail...");
     }
-    else{
-      println("Fail..");
-    }
-  }
-  
 }
 
 class PaperMulti{

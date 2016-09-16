@@ -4,10 +4,8 @@
  * http://www.inf.fh-flensburg.de/lang/algorithmen/sortieren/heap/heapen.htm
 */
 
-object HeapSort {
-	def main() : Unit = {
-		println(new HS().init().start());
-	}
+program HeapSort {
+    println(new HS().init().start());
 }
 
 class HS {

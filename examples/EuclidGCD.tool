@@ -1,7 +1,5 @@
-object EuclidGcd {
-    def main() : Unit = {
-      println(new EGCD().gcd(25,100));
-    }
+program EuclidGcd {
+    println(new EGCD().gcd(25,100));
 }
 //Uses the euclid algorithm to compute
 //the greatest common divisor between numbers a and b

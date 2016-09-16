@@ -1,4 +1,3 @@
-
 // This is a simple implementation of '99 bottles of beer' in Tool.
 // I guess everyone saw that one coming :)
 
@@ -9,10 +8,8 @@
 // To quote @built (twitter.com/built) about his language 'Wheeler':
 // "MY GOD IT'S FULL OF STATE!"
 
-object NinetyNineBottles {
-    def main() : Unit = {
-        if(new DrunkPirate().sing()) { println("Done!"); }
-    } 
+program NinetyNineBottles {
+    if(new DrunkPirate().sing()) { println("Done!"); }
 }
 
 class DrunkPirate {

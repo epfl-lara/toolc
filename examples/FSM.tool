@@ -1,7 +1,5 @@
-object FSM {
-	def main(): Unit = {
-		println(new FSMTester().run());
-	}
+program FSM {
+    println(new FSMTester().run());
 }
 
 class FSMTester {

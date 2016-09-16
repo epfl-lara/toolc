@@ -1,7 +1,5 @@
-object Hanoi {
-	def main(): Unit = {
-		println(new Tests().launch());
-	}
+program Hanoi {
+    println(new Tests().launch());
 }
 
 class Tests {

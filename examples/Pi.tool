@@ -1,7 +1,5 @@
-object Pi {
-    def main() : Unit = {
-        if(new Computer().computePi()) { println("Ok"); } else { println("error"); }
-    }
+program Pi {
+    if(new Computer().computePi()) { println("Ok"); } else { println("error"); }
 }
 
 class Computer {

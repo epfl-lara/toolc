@@ -1,7 +1,5 @@
-object Polymorphism {
-  def main() : Unit = {
+program Polymorphism {
     println("Polymorphism and Reference test suite " + new PolymorphismTest().run());
-  }
 }
 
 class PolymorphismTest {

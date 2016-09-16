@@ -1,10 +1,8 @@
-object OptiBubbleMain {
-	def main() : Unit = {
-		println(new bubbleAlgorithm().init().funct());
-	}
+program OptiBubbleMain {
+    println(new BubbleAlgorithm().init().funct());
 }
 
-class bubbleAlgorithm {
+class BubbleAlgorithm {
 	// The array of the numbers to sort
 	var numbersToSort : Int[];
 	var sizeLeftToSort : Int;
@@ -16,27 +14,27 @@ class bubbleAlgorithm {
 	var tempForSwap : Int;
 	
 	/* Variables initialization */
-	def init () : bubbleAlgorithm = {
-	numbersToSort = new Int[15];
-	numbersToSort[0] = 1;
-	numbersToSort[1] = 5;
-	numbersToSort[2] = 9;
-	numbersToSort[3] = 9;
-	numbersToSort[4] = 3;
-	numbersToSort[5] = 5;
-	numbersToSort[6] = 1;
-	numbersToSort[7] = 2;
-	numbersToSort[8] = 6;
-	numbersToSort[10] = 4;
-	numbersToSort[11] = 3;
-	numbersToSort[12] = 8;
-	numbersToSort[13] = 0;
-	numbersToSort[14] = 9;
-	return this;
-	}
+    def init () : BubbleAlgorithm = {
+        numbersToSort = new Int[15];
+        numbersToSort[0] = 1;
+        numbersToSort[1] = 5;
+        numbersToSort[2] = 9;
+        numbersToSort[3] = 9;
+        numbersToSort[4] = 3;
+        numbersToSort[5] = 5;
+        numbersToSort[6] = 1;
+        numbersToSort[7] = 2;
+        numbersToSort[8] = 6;
+        numbersToSort[10] = 4;
+        numbersToSort[11] = 3;
+        numbersToSort[12] = 8;
+        numbersToSort[13] = 0;
+        numbersToSort[14] = 9;
+        return this;
+    }
 	
-	def funct(): Int = {
-		sizeLeftToSort = numbersToSort.length;
+    def funct(): Int = {
+    	sizeLeftToSort = numbersToSort.length;
 		counter = 1;
 		
 		while (!(sizeLeftToSort == 0)) {

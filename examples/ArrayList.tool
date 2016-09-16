@@ -1,9 +1,7 @@
 //Implementation of an array list
 
-object ArrayList {
-	def main() : Unit = {
-		println(new Tester().exec());
-	}
+program ArrayList {
+    println(new Tester().exec());
 }
 
 class Tester {

@@ -1,4 +1,3 @@
-
 // This is a simple HQ9++ interpreter in Tool.
 // Sadly, since Tool doesn't have either standard input
 // nor string manipulation, it's a bit awkward. Still thought
@@ -6,10 +5,8 @@
 
 // It reuses code from 99bottles.tool
 
-object HQ9PlusPlus {
-    def main() : Unit = {
-        if(new ExampleRun().run()) { println("Done!"); }
-    } 
+program HQ9PlusPlus {
+    if(new ExampleRun().run()) { println("Done!"); }
 }
 
 class ExampleRun {

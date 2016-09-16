@@ -1,8 +1,6 @@
-object Maze {
-  def main() : Unit = {
+program Maze {
     /* prints a maze of size 20x20 */
     println(new MazeArray().init(20).printMaze());
-  }
 }
 
 class MazeArray {

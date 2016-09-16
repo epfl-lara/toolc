@@ -1,7 +1,5 @@
-object Prime {
-  def main() : Unit = {
+program Prime {
     println(new primeTest().init());        
-  }
 }
 
 

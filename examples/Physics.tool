@@ -1,13 +1,11 @@
 /*
-Physics simulation of a moving object.
-*/
+ * Physics simulation of a moving object.
+ */
 
-object Physics {
-    def main() : Unit = {
-    	// object starts in (1;25) with an initial speed of (5;1)
-    	// simulation will run for 25 iterations and gravity is -1
-        println(new Simulation().Start(1,25, 5,1, 25, 0-1));
-    }
+program Physics {
+    // object starts in (1;25) with an initial speed of (5;1)
+    // simulation will run for 25 iterations and gravity is -1
+    println(new Simulation().Start(1,25, 5,1, 25, 0-1));
 }
 
 class Simulation {

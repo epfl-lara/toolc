@@ -1,11 +1,7 @@
-object NewString {
-	def main(): Unit = {
-		{
-		println(new NewStringOperators().concat(new StringBuilder().banana(),new StringBuilder().banana()).print());
-		println(new NewStringOperators().subString(new StringBuilder().banana(), 0, 0).print());
-		println(new NewStringOperators().toCamelCase(new StringBuilder().banana()).print());
-		}
-	}
+program NewString {
+    println(new NewStringOperators().concat(new StringBuilder().banana(),new StringBuilder().banana()).print());
+    println(new NewStringOperators().subString(new StringBuilder().banana(), 0, 0).print());
+    println(new NewStringOperators().toCamelCase(new StringBuilder().banana()).print());
 }
 
 

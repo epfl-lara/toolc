@@ -1,8 +1,6 @@
-object Rot13 {
-  def main() : Unit = {
+program Rot13 {
     // shows the translation table for rot13
     println(new Sample().run());
-  }
 }
 
 class Decoder {

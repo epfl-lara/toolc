@@ -2,18 +2,14 @@
 // with a simple pseudorandom array generator (another algorithm than in
 // the Maze programm)
 
-object Sorting {
-   def main() : Unit = {      
-      {
-         println(new ArrayPrinter().print(new PseudoRandom().getNumberArray(29,13),"Unsorted Numbers : "));
-         println(new ArrayPrinter().print(new BubbleSort().sort(new PseudoRandom().getNumberArray(29, 13)),"After Bubble Sort : "));   
-         println(new ArrayPrinter().print(new PseudoRandom().getNumberArray(17,4),"Unsorted Numbers : "));
-         println(new ArrayPrinter().print(new SelectionSort().sort(new PseudoRandom().getNumberArray(17,4)),"After Selection Sort : "));   
-      }
-   }
+program Sorting {
+     println(new ArrayPrinter().print(new PseudoRandom().getNumberArray(29,13),"Unsorted Numbers : "));
+     println(new ArrayPrinter().print(new BubbleSort().sort(new PseudoRandom().getNumberArray(29, 13)),"After Bubble Sort : "));
+     println(new ArrayPrinter().print(new PseudoRandom().getNumberArray(17,4),"Unsorted Numbers : "));
+     println(new ArrayPrinter().print(new SelectionSort().sort(new PseudoRandom().getNumberArray(17,4)),"After Selection Sort : "));
 }
 
-class BubbleSort {   
+class BubbleSort {
    def sort(array : Int[]) : Int[] = {
       var tmp : Int;
       var i : Int;
@@ -36,10 +32,10 @@ class BubbleSort {
             }
             i = i + 1;
          }
-         
+
          j = j - 1;
       }
-      return array;      
+      return array;
    }
 
 }

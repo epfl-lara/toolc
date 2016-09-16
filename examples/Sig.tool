@@ -46,12 +46,10 @@ public class M {
     }
 }
 
------------------ Implemented ------------------
+----------------- Implementation ------------------
 */
-object Sig {
-    def main() : Unit = {
-        println(new App().run());        
-    }
+program Sig {
+    println(new App().run());
 }
 
 class App {

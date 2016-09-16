@@ -2,14 +2,10 @@
 Draw different figures in ASCII using a Drawable class and some maths.
 */
 
-object DrawStuff {
-    def main() : Unit = {
-    	{
-    		println(new ConcentricCircles().render());
-    		println(new Mandelbrot().render());
-    		println(new Cross().render());
-    	}	
-    }
+program DrawStuff {
+    println(new ConcentricCircles().render());
+    println(new Mandelbrot().render());
+    println(new Cross().render());
 }
 
 class Drawable {

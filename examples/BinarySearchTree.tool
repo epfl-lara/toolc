@@ -1,7 +1,5 @@
-object BinarySearchTree {
-    def main() : Unit = {
-        println(new Test().run());        
-    }
+program BinarySearchTree {
+    println(new Test().run());        
 }
 
 class Tree {

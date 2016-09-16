@@ -1,7 +1,5 @@
-object BinarySearch {
-    def main(): Unit = {
-        println(new BS().Start(20));
-    }
+program BinarySearch {
+    println(new BS().Start(20));
 }
 
 // This class contains an array of integers and

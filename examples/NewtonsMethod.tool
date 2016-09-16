@@ -1,7 +1,5 @@
-object NewtonsMethod {
-    def main(): Unit = {
-        println("Final result: " + new NM().sqrt(2).toString());
-    }
+program NewtonsMethod {
+    println("Final result: " + new NM().sqrt(2).toString());
 }
 
 class NM {

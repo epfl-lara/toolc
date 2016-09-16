@@ -1,5 +1,5 @@
-object RpnCalc {
-	def main(): Unit = {println(new Test().execute());}
+program RpnCalc {
+    println(new Test().execute());
 }
 
 class Test {

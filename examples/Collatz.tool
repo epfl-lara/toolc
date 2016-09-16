@@ -1,13 +1,9 @@
-object CollMain {
-    def main() : Unit = {
-       {
-       println(new Collatz().init().check(10));
-       println(new Collatz().init().check(17)); 
-       println(new Collatz().init().check(123)); 
-       println(new Collatz().init().check(14)); 
-       println(new Collatz().init().check(243)); 
-       }
-    }
+program CollMain {
+    println(new Collatz().init().check(10));
+    println(new Collatz().init().check(17)); 
+    println(new Collatz().init().check(123)); 
+    println(new Collatz().init().check(14)); 
+    println(new Collatz().init().check(243)); 
 }
  
 class Collatz {

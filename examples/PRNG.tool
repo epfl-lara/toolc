@@ -1,13 +1,10 @@
-
 // This is a quick and dirty pseudo-random number generator
 // It's not so impressive in itself, but is useful for other programs!
 
 // The demo displays bar graphs of randomly generated numbers
 
-object PRNGTest {
-    def main() : Unit = {
-        if(!new PRNGTestRunner().run()) { println("FAIL"); }
-    }
+program PRNGTest {
+    if(!new PRNGTestRunner().run()) { println("FAIL"); }
 }
 
 class PRNGTestRunner {

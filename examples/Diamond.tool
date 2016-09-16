@@ -1,10 +1,8 @@
-object Diamond {
-	def main() : Unit = {
-		if(new DiamondPrinter().run(6)) 
-			println("Success!");
-		else 
-			println("Error");
-	}
+program Diamond {
+    if(new DiamondPrinter().run(6)) 
+        println("Success!");
+    else 
+        println("Error");
 }
 
 class DiamondPrinter {
