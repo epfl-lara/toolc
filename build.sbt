@@ -16,6 +16,8 @@ proguardSettings
 
 ProguardKeys.options in Proguard ++= Seq("-dontnote", "-dontwarn", "-ignorewarnings")
 
+ProguardKeys.proguardVersion in Proguard := "5.2.1"
+
 ProguardKeys.inputFilter in Proguard := { file =>
   file.name match {
     case "manifest.jar"  => None
