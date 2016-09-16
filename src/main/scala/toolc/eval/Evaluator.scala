@@ -176,9 +176,10 @@ class Evaluator(ctx: Context, prog: Program) {
   }
 
   class MainContext extends EvaluationContext {
-    def getVariable(name: String): Value          = fatal("The main object contains no variables and/or fields")
-    def setVariable(name: String, v: Value): Unit = fatal("The main object contains no variables and/or fields")
-    def declareVariable(name: String): Unit       = fatal("The main object contains no variables and/or fields")
+    private def unavailable = fatal("The main object contains no variables and/or fields")
+    def getVariable(name: String): Value          = unavailable
+    def setVariable(name: String, v: Value): Unit = unavailable
+    def declareVariable(name: String): Unit       = unavailable
   }
 
   def findMethod(cd: ClassDecl, name: String): MethodDecl = {
