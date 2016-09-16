@@ -28,26 +28,17 @@ object Types {
   }
   
   case object TInt extends Type {
-    override def isSubTypeOf(tpe: Type): Boolean = tpe match {
-      case TInt => true
-      case _ => false
-    }
-    override def toString = "int"
+    override def isSubTypeOf(tpe: Type): Boolean = tpe == this
+    override def toString = "Int"
   }
   
   case object TBoolean extends Type {
-    override def isSubTypeOf(tpe: Type): Boolean = tpe match {
-      case TBoolean => true
-      case _ => false
-    }
-    override def toString = "boolean"
+    override def isSubTypeOf(tpe: Type): Boolean = tpe == this
+    override def toString = "Bool"
   }
   
   case object TString extends Type {
-    override def isSubTypeOf(tpe: Type): Boolean = tpe match {
-      case TString => true
-      case _ => false
-    }
+    override def isSubTypeOf(tpe: Type): Boolean = tpe == this
     override def toString = "String"
   }
   
@@ -56,7 +47,7 @@ object Types {
       case TIntArray => true
       case _ => false
     }
-    override def toString = "int[]"
+    override def toString = "Int[]"
   }
   
   case class TClass(classSymbol: ClassSymbol) extends Type {
@@ -70,7 +61,8 @@ object Types {
       }
 
       tpe match {
-        case TClass(cs2) => cs2.name.equals("Object") || findInSymbol(classSymbol, cs2)
+        case `TObject` => true
+        case TClass(cs2) => findInSymbol(classSymbol, cs2)
         case _ => false
       }
     }
