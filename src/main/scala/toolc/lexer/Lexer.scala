@@ -9,12 +9,10 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
   import Tokens._
 
   val keywords: PartialFunction[String, Token] = {
-    case "object"   => OBJECT()
+    case "program"  => PROGRAM()
     case "class"    => CLASS()
     case "def"      => DEF()
     case "var"      => VAR()
-    case "Unit"     => UNIT()
-    case "main"     => MAIN()
     case "String"   => STRING()
     case "extends"  => EXTENDS()
     case "Int"      => INT()

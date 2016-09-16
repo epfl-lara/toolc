@@ -58,11 +58,11 @@ object Parser extends Pipeline[Iterator[Token], Program] {
 
     def parseMainObject: MainObject = {
       val pos = currentToken
-      eat(OBJECT())
+      eat(PROGRAM())
       val id = parseIdentifier
-      eat(LBRACE(), DEF(), MAIN(), LPAREN(), RPAREN(), COLON(), UNIT(), EQSIGN(), LBRACE())
+      eat(LBRACE())
       val stats = parseStatements
-      eat(RBRACE(), RBRACE())
+      eat(RBRACE())
       MainObject(id, stats).setPos(pos)
     }
 

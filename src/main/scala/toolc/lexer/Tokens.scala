@@ -29,12 +29,10 @@ object Tokens {
   case class MINUS()      extends Token // -
   case class TIMES()      extends Token // *
   case class DIV()        extends Token // /
-  case class OBJECT()     extends Token // object
+  case class PROGRAM()    extends Token // program
   case class CLASS()      extends Token // class
   case class DEF()        extends Token // def
   case class VAR()        extends Token // var
-  case class UNIT()       extends Token // unit
-  case class MAIN()       extends Token // main
   case class STRING()     extends Token // string
   case class EXTENDS()    extends Token // extends
   case class INT()        extends Token // int

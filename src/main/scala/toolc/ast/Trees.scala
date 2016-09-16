@@ -24,7 +24,6 @@ object Trees {
     override def toString = value
   }
 
-
   // Definitions
   sealed trait DefTree extends Tree
   case class Program(main: MainObject, classes: List[ClassDecl])
