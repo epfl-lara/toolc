@@ -73,7 +73,7 @@ object Printer {
         case VarDecl(tpe, id) =>
           app(s"var $id: "); toStr(tpe); app(";")
 
-        case MethodDecl(retType, id, args, vars, stats, retExpr) =>
+        case MethodDecl(id, args, retType, vars, stats, retExpr) =>
           app(s"def $id(")
           if (args.nonEmpty) {
             args.init foreach { arg => toStr(arg); app(", ") }

@@ -64,7 +64,7 @@ object ParserHarness {
 
           case VarDecl(tpe, id) => "var " + toStr(id) + ": " + toStr(tpe) + ";"
 
-          case MethodDecl(retType, id, args, vars, stats, retExpr) =>
+          case MethodDecl(id, args, retType, vars, stats, retExpr) =>
             var str = "def " + toStr(id) + "(" + args.map(f => { toStr(f.id) + " : " + toStr(f.tpe) }).mkString(", ") + ") : " + toStr(retType) + " = {\n"
             incIdent
             str = str + ident + vars.map(toStr(_)).mkString("\n"+ident) + "\n"

@@ -31,7 +31,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
   }
 
 
-
+  /** Reads the contents of a file, caching two characters at a time */
   class SourceReader(f: File) {
     private val source = Source.fromFile(f)
 

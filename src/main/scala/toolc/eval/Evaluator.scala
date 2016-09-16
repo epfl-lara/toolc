@@ -141,7 +141,7 @@ class Evaluator(ctx: Context, prog: Program) {
 
     case NewIntArray(size) =>
       val s = evalExpr(size).asInt
-      new ArrayValue(new Array(s))
+      new ArrayValue(new Array[Int](s))
   }
 
   abstract class EvaluationContext {
@@ -232,17 +232,20 @@ class Evaluator(ctx: Context, prog: Program) {
 
   case class ArrayValue(entries: Array[Int]) extends Value {
     val length = entries.length
-    def setIndex(i: Int, v: Int) {
-      if (i >= length || i < 0) {
-        fatal(s"Index '$i' out of bounds (0 .. ${length-1})")
+
+    private def checkBounds(index: Int) = {
+      if (index < 0 || index >= length) {
+        fatal(s"Index '$index' out of bounds (0 .. ${length-1})")
       }
+    }
+
+    def setIndex(i: Int, v: Int) {
+      checkBounds(i)
       entries(i) = v
     }
 
     def getIndex(i: Int) = {
-      if (i >= length || i < 0) {
-        fatal(s"Index '$i' out of bounds (0 .. ${length-1})")
-      }
+      checkBounds(i)
       entries(i)
     }
 
@@ -261,4 +264,3 @@ class Evaluator(ctx: Context, prog: Program) {
     override def asBool = v
   }
 }
-
