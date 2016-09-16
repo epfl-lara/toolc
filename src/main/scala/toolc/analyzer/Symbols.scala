@@ -39,11 +39,13 @@ object Symbols {
 
   /** The global scope contains symbols of the main object and classes */
   class GlobalScope {
-    var mainClass: ClassSymbol = _
+    var mainClass: MainSymbol = _
     var classes = Map[String,ClassSymbol]()
 
     def lookupClass(n: String): Option[ClassSymbol] = classes.get(n)
   }
+
+  class MainSymbol(val name: String) extends Symbol
 
   class ClassSymbol(val name: String) extends Symbol {
     var parent: Option[ClassSymbol] = None

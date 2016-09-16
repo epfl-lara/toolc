@@ -39,7 +39,7 @@ object ASTDumpParser extends Pipeline[ASTNode, Program] {
         case Node("VarDecl", subs) =>
           VarDecl(x(subs(0)), x(subs(1)))
         case Node("MethodDecl", subs) =>
-          MethodDecl(x(subs(0)), x(subs(1)), xList(subs(2)), xList(subs(3)), xList(subs(4)), x(subs(5)))
+          MethodDecl(x(subs(0)), xList(subs(1)), x(subs(2)), xList(subs(3)), xList(subs(4)), x(subs(5)))
         case Node("Formal", subs) =>
           Formal(x(subs(0)), x(subs(1)))
         case Node("IntArrayType", Nil) =>

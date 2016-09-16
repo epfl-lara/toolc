@@ -100,7 +100,7 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       eat(RETURN())
       val retExpr = parseExpr
       eat(SEMICOLON(), RBRACE())
-      MethodDecl(retTpe, id, formals, varDecls, stats, retExpr).setPos(pos)
+      MethodDecl(id, formals, retTpe, varDecls, stats, retExpr).setPos(pos)
     }
 
     def parseFormals: List[Formal] = {

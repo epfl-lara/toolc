@@ -18,6 +18,9 @@ object Trees {
       case ms: MethodSymbol =>
         sys.error("Requesting type of a method identifier.")
 
+      case ms: MainSymbol =>
+        sys.error("Requesting type of main object")
+
       case vs: VariableSymbol =>
         vs.getType
     }
@@ -30,14 +33,14 @@ object Trees {
   case class Program(main: MainObject, classes: List[ClassDecl])
     extends DefTree
   case class MainObject(id: Identifier, stats: List[StatTree])
-    extends DefTree with Symbolic[ClassSymbol]
+    extends DefTree with Symbolic[MainSymbol]
   case class ClassDecl(id: Identifier, parent: Option[Identifier], vars: List[VarDecl], methods: List[MethodDecl])
     extends DefTree with Symbolic[ClassSymbol]
   case class VarDecl(tpe: TypeTree, id: Identifier)
     extends DefTree with Symbolic[VariableSymbol]
-  case class MethodDecl(retType: TypeTree,
-                        id: Identifier,
+  case class MethodDecl(id: Identifier,
                         args: List[Formal],
+                        retType: TypeTree,
                         vars: List[VarDecl],
                         stats: List[StatTree],
                         retExpr: ExprTree)
