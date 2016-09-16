@@ -23,10 +23,10 @@ object TypeChecking extends Pipeline[Program, Program] {
       tcExpr(meth.retExpr, retType)
     }
 
-    /** Computes the type of an expression. If expectedTp is not empty, checks that
-     * the expression is a subtype of the ones in expectedTp. If it's not, prints an
+    /** Computes the type of an expression. If expectedTps is not empty, checks that
+     * the expression is a subtype of the ones in expectedTps. If it's not, prints an
      * error message and returns the error type. */
-    def tcExpr(expr: ExprTree, expectedTp: Type*): Type = {
+    def tcExpr(expr: ExprTree, expectedTps: Type*): Type = {
       val actualType: Type = expr match {
         case And(lhs, rhs) =>
           tcExpr(lhs, TBoolean)
@@ -99,7 +99,9 @@ object TypeChecking extends Pipeline[Program, Program] {
                   if(mSym.argList.length != args.length) {
                     error("Wrong number of arguments for method " + mSym.name + ".", meth)
                   } else {
-                    args.zip(mSym.argList.map(_.getType)) foreach { case (expr, tpe) => tcExpr(expr, tpe) }
+                    args.zip(mSym.argList.map(_.getType)) foreach {
+                      case (expr, tpe) => tcExpr(expr, tpe)
+                    }
                   }
                   mSym.getType // better than error type.
                 case None =>
@@ -136,19 +138,12 @@ object TypeChecking extends Pipeline[Program, Program] {
           TBoolean
       }
 
-      val tpe = if(expectedTp.isEmpty) {
-          actualType
-        } else {
-          if(!expectedTp.exists(e => actualType.isSubTypeOf(e))) {
-            if(expectedTp.length == 1)
-              error("Type error: Expected: " + expectedTp.toList.head + ", found: " + actualType, expr)
-            else          
-              error("Type error: Expected one of the following types: " + expectedTp.toList.mkString(", ") + ", found: " + actualType, expr)
-            expectedTp.head
-          } else {
-            actualType
-          }
-        }
+      val tpe = if(expectedTps.isEmpty || expectedTps.exists(e => actualType.isSubTypeOf(e)) ) {
+        actualType
+      } else {
+        error("Type error: Expected: " + expectedTps.mkString(" or ") + s", found: $actualType", expr)
+        expectedTps.head
+      }
 
       expr.setType(tpe)
       tpe

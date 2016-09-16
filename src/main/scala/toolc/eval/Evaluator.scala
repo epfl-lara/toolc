@@ -8,7 +8,7 @@ class Evaluator(ctx: Context, prog: Program) {
   import ctx.reporter._
 
   def eval() {
-    val ectx = new MainMethodContext
+    val ectx = new MainContext
     prog.main.stats.foreach(evalStatement(_)(ectx))
   }
 
@@ -175,7 +175,7 @@ class Evaluator(ctx: Context, prog: Program) {
     }
   }
 
-  class MainMethodContext extends EvaluationContext {
+  class MainContext extends EvaluationContext {
     def getVariable(name: String): Value          = fatal("The main method contains no variable and/or field")
     def setVariable(name: String, v: Value): Unit = fatal("The main method contains no variable and/or field")
     def declareVariable(name: String): Unit       = fatal("The main method contains no variable and/or field")
