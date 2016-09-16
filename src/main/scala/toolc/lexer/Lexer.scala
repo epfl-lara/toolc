@@ -229,11 +229,3 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
   }
 }
 
-/** Reads and displays the tokens, then returns a fresh iterator with the same tokens. */
-object DisplayTokens extends Pipeline[Iterator[Token], Iterator[Token]] {
-  def run(ctx: Context)(tokens: Iterator[Token]): Iterator[Token] = {
-    val l = tokens.toList
-    l foreach { t => println(s"$t(${t.line}:${t.col})") }
-    l.iterator
-  }
-}
