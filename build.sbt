@@ -4,7 +4,7 @@ mainClass in (Compile, run) := Some("toolc.Main")
 
 mainClass in (Compile, packageBin) := Some("toolc.Main")
 
-version := "2.8"
+version := "3.0"
 
 scalaVersion := "2.11.8"
 
