@@ -78,7 +78,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
         val chain = mkChain(clsSym)
 
         if (chain.size > 1 && chain.head == chain.last) {
-          fatal("Cyclic inheritance: " + chain.mkString(" -> "))
+          fatal("Cyclic inheritance: " + chain.map(_.name).mkString(" -> "))
         }
 
       }

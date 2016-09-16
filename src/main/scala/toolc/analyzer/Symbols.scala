@@ -6,6 +6,8 @@ import utils._
 import Types._
 
 object Symbols {
+
+  /** An object uniquely identified by a symbol */
   trait Symbolic[S <: Symbol] {
     private var _sym: Option[S] = None
 
@@ -20,11 +22,6 @@ object Symbols {
     }
   }
 
-  sealed abstract class Symbol extends Positioned with Typed {
-    val id: Int = UniqueCounters.next
-    val name: String
-  }
-
   private object UniqueCounters {
     private var c: Int = -1
 
@@ -34,6 +31,13 @@ object Symbols {
     }
   }
 
+  /** Uniquely identifies a [[Symbolic]] object */
+  sealed abstract class Symbol extends Positioned with Typed {
+    val id: Int = UniqueCounters.next
+    val name: String
+  }
+
+  /** The global scope contains symbols of the main object and classes */
   class GlobalScope {
     var mainClass: ClassSymbol = _
     var classes = Map[String,ClassSymbol]()

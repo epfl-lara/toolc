@@ -8,7 +8,8 @@ import analyzer.Types._
 object Trees {
   sealed trait Tree extends Positioned
 
-  // Unique symbols
+  // Identifiers represent names in Tool. When a unique symbol gets attached to them,
+  // they become unique
   case class Identifier(value: String) extends Tree with Symbolic[Symbol] with Typed {
     override def getType: Type = getSymbol match {
       case cs: ClassSymbol =>
