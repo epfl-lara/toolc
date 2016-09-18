@@ -1,4 +1,4 @@
-name := "toolc"
+name := "toolc-frontend"
 
 mainClass in (Compile, run) := Some("toolc.Main")
 
