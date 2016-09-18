@@ -2,29 +2,13 @@ package toolc
 package ast
 
 import utils._
-import analyzer.Symbols._
-import analyzer.Types._
 
 object Trees {
   sealed trait Tree extends Positioned
 
   // Identifiers represent names in Tool. When a unique symbol gets attached to them,
   // they become unique
-  case class Identifier(value: String) extends Tree with Symbolic[Symbol] with Typed {
-    override def getType: Type = getSymbol match {
-      case cs: ClassSymbol =>
-        TClass(cs)
-
-      case ms: MethodSymbol =>
-        sys.error("Requesting type of a method identifier.")
-
-      case ms: MainSymbol =>
-        sys.error("Requesting type of main object")
-
-      case vs: VariableSymbol =>
-        vs.getType
-    }
-    override def setType(tpe: Type) = this
+  case class Identifier(value: String) extends Tree {
     override def toString = value
   }
 
@@ -33,38 +17,28 @@ object Trees {
   case class Program(main: MainObject, classes: List[ClassDecl])
     extends DefTree
   case class MainObject(id: Identifier, stats: List[StatTree])
-    extends DefTree with Symbolic[MainSymbol]
+    extends DefTree 
   case class ClassDecl(id: Identifier, parent: Option[Identifier], vars: List[VarDecl], methods: List[MethodDecl])
-    extends DefTree with Symbolic[ClassSymbol]
+    extends DefTree
   case class VarDecl(tpe: TypeTree, id: Identifier)
-    extends DefTree with Symbolic[VariableSymbol]
+    extends DefTree
   case class MethodDecl(id: Identifier,
                         args: List[Formal],
                         retType: TypeTree,
                         vars: List[VarDecl],
                         stats: List[StatTree],
                         retExpr: ExprTree)
-    extends DefTree with Symbolic[MethodSymbol]
+    extends DefTree
   sealed case class Formal(tpe: TypeTree, id: Identifier)
-    extends DefTree with Symbolic[VariableSymbol]
+    extends DefTree
 
   // Types
-  sealed trait TypeTree extends Tree with Typed
-  case class IntArrayType() extends TypeTree {
-    override def getType = TIntArray
-  }
-  case class IntType() extends TypeTree {
-    override def getType = TInt
-  }
-  case class BooleanType() extends TypeTree {
-    override def getType = TBoolean
-  }
-  case class StringType() extends TypeTree {
-    override def getType = TString
-  }
-  case class ClassType(id: Identifier) extends TypeTree {
-    override def getType = id.getType
-  }
+  sealed trait TypeTree extends Tree
+  case class IntArrayType() extends TypeTree
+  case class IntType() extends TypeTree
+  case class BooleanType() extends TypeTree
+  case class StringType() extends TypeTree
+  case class ClassType(id: Identifier) extends TypeTree
 
   // Statements
   sealed trait StatTree extends Tree
@@ -77,7 +51,7 @@ object Trees {
   case class DoExpr(e: ExprTree) extends StatTree
 
   // Expressions
-  sealed trait ExprTree extends Tree with Typed
+  sealed trait ExprTree extends Tree
   case class And(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class Or(lhs: ExprTree, rhs: ExprTree) extends ExprTree
   case class Plus(lhs: ExprTree, rhs: ExprTree) extends ExprTree
@@ -94,7 +68,7 @@ object Trees {
   case class Variable(id: Identifier) extends ExprTree
   case class True() extends ExprTree
   case class False() extends ExprTree
-  case class This() extends ExprTree with Symbolic[ClassSymbol]
+  case class This() extends ExprTree
   case class NewIntArray(size: ExprTree) extends ExprTree
   case class New(tpe: Identifier) extends ExprTree
   case class Not(expr: ExprTree) extends ExprTree
