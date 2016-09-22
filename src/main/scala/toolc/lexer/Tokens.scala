@@ -57,4 +57,8 @@ object Tokens {
 
   // String literals
   case class STRINGLIT(val value: String) extends Token
+
+  case object IDSENT extends Token
+  case object INTLITSENT extends Token
+  case object STRINGLITSENT extends Token
 }
