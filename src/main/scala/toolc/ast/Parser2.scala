@@ -30,7 +30,6 @@ object Parser2 extends Pipeline[Iterator[Token], Unit] {
     'Type	::=	INT() ~ LBRACKET() ~ RBRACKET() | BOOLEAN() | INT() | STRING() | 'Identifier,
     'Statement ::= LBRACE() ~ 'Stmts ~ RBRACE()
                  | IF() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'Statement ~ 'ElseOpt
-                 | IF() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'Statement ~ ELSE()  ~ 'Statement
                  | WHILE() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'Statement
                  | PRINTLN() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ SEMICOLON()
                  | 'Identifier ~ EQSIGN() ~ 'Expression ~ SEMICOLON()
@@ -48,7 +47,7 @@ object Parser2 extends Pipeline[Iterator[Token], Unit] {
                   | BANG() ~ 'Expression
                   | LPAREN() ~ 'Expression ~ RPAREN(),
     'Args ::= epsilon() | 'Expression ~ 'ExprList,
-    'ExprList ::= epsilon() | COMMA() ~ 'Expression | 'ExprList,
+    'ExprList ::= epsilon() | COMMA() ~ 'Expression ~ 'ExprList,
     'Op ::= AND() | OR()| EQUALS() | LESSTHAN() | PLUS() | MINUS() | TIMES() | DIV(),
     'Identifier ::= IDSENT
   ))
@@ -107,6 +106,50 @@ object Parser2 extends Pipeline[Iterator[Token], Unit] {
     'Op ::= AND() | OR()| EQUALS() | LESSTHAN() | PLUS() | MINUS() | TIMES() | DIV(),
     'Identifier ::= IDSENT
   ))
+
+  val ll1grammar = Grammar('Goal, List[Rules[Token]](
+    'Goal ::= 'MainObject ~ 'ClassDecls ~ EOF(),
+    'MainObject ::=  PROGRAM() ~ 'Identifier ~ LBRACE() ~ 'Stmts ~ RBRACE(),
+    'Stmts ::= 'Statement ~ 'Stmts | epsilon(),
+    'ClassDecls ::= 'ClassDeclaration ~ 'ClassDecls | epsilon(),
+    'ClassDeclaration	::=	CLASS() ~ 'Identifier ~ 'OptExtends ~ 'ClassBody,
+    'OptExtends ::= epsilon() | EXTENDS() ~ 'Identifier,
+    'ClassBody ::= LBRACE() ~ 'VarDecs ~ 'MethodDecs ~ RBRACE(),
+    'VarDecs ::= 'VarDeclaration ~ 'VarDecs | epsilon(),
+    'VarDeclaration	::= VAR() ~ 'Param ~ SEMICOLON(),
+    'MethodDecs ::= 'MethodDeclaration ~ 'MethodDecs | epsilon(),
+    'MethodDeclaration ::= DEF() ~ 'Identifier ~ LPAREN() ~ 'Params ~ RPAREN() ~ COLON() ~ 'Type ~ EQSIGN() ~ LBRACE() ~ 'VarDecs ~ 'Stmts ~ RETURN() ~ 'Expression ~ SEMICOLON() ~ RBRACE(),
+    'Params ::= epsilon() | 'Param ~ 'ParamList,
+    'ParamList ::= epsilon() | COMMA() ~ 'Param ~ 'ParamList,
+    'Param ::= 'Identifier ~ COLON() ~ 'Type,
+    'Type	::=	INT() ~ 'IntType | BOOLEAN() | STRING() | 'Identifier,
+    'IntType ::= LBRACKET() ~ RBRACKET() | epsilon(),
+    'Statement ::= LBRACE() ~ 'Stmts ~ RBRACE()
+      | IF() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'Statement ~ 'ElseOpt
+      | WHILE() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'Statement
+      | PRINTLN() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ SEMICOLON()
+      | 'Identifier ~ 'IdStat
+      | DO() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ SEMICOLON(),
+    'IdStat ::= EQSIGN() ~ 'Expression ~ SEMICOLON()
+              | LBRACKET() ~ 'Expression ~ RBRACKET() ~ EQSIGN() ~ 'Expression ~ SEMICOLON(),
+    'ElseOpt ::= ELSE() ~ 'Statement | epsilon(),
+    'Expression ::= 'Expression ~ 'Op ~ 'Expression
+      | 'Expression  ~ LBRACKET() ~ 'Expression ~ RBRACKET()
+      | 'Expression ~ DOT() ~ LENGTH()
+      | 'Expression ~ DOT() ~ 'Identifier ~  LPAREN() ~ 'Args ~ RPAREN()
+      | INTLITSENT | STRINGLITSENT
+      | TRUE() | FALSE() | 'Identifier | THIS()
+      | NEW() ~ INT() ~ LBRACKET() ~ 'Expression ~ RBRACKET()
+      | NEW() ~ 'Identifier ~ LPAREN() ~ RPAREN()
+      | BANG() ~ 'Expression
+      | LPAREN() ~ 'Expression ~ RPAREN(),
+    'Args ::= epsilon() | 'Expression ~ 'ExprList,
+    'ExprList ::= epsilon() | COMMA() ~ 'Expression ~ 'ExprList,
+    'Op ::= AND() | OR()| EQUALS() | LESSTHAN() | PLUS() | MINUS() | TIMES() | DIV(),
+    'Identifier ::= IDSENT
+  ))
+
+
 
   def run(ctx: Context)(tokens: Iterator[Token]): Unit = {
     implicit val gc = new GlobalContext()
