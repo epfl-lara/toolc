@@ -135,20 +135,25 @@ object Parser2 extends Pipeline[Iterator[Token], Unit] {
                   | DO() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ SEMICOLON(),
     'IdStat ::= EQSIGN() ~ 'Expression ~ SEMICOLON()
               | LBRACKET() ~ 'Expression ~ RBRACKET() ~ EQSIGN() ~ 'Expression ~ SEMICOLON(),
-    'ElseOpt ::= ELSE() ~ 'MatchedIf | epsilon(),
-    'Expression ::= 'Expression ~ 'Op ~ 'Expression
-      | 'Expression  ~ LBRACKET() ~ 'Expression ~ RBRACKET()
-      | 'Expression ~ DOT() ~ LENGTH()
-      | 'Expression ~ DOT() ~ 'Identifier ~  LPAREN() ~ 'Args ~ RPAREN()
-      | INTLITSENT | STRINGLITSENT
-      | TRUE() | FALSE() | 'Identifier | THIS()
-      | NEW() ~ INT() ~ LBRACKET() ~ 'Expression ~ RBRACKET()
-      | NEW() ~ 'Identifier ~ LPAREN() ~ RPAREN()
-      | BANG() ~ 'Expression
-      | LPAREN() ~ 'Expression ~ RPAREN(),
+    'ElseOpt ::= ELSE() ~ 'Statement | epsilon(),
+    'Expression ::= 'Atom ~ 'Operation,
+    'Operation ::= 'Op ~ 'Expression
+                 | epsilon(),
+    'Atom ::= 'SimpleAtom ~ 'AtomTail
+            |  BANG() ~ 'Atom,
+    'AtomTail ::= LBRACKET() ~ 'Expression ~ RBRACKET()
+                | DOT() ~ 'Dotted
+                | epsilon(),
+    'SimpleAtom ::= INTLITSENT | STRINGLITSENT
+            | TRUE() | FALSE() | 'Identifier | THIS()
+            | NEW() ~ 'NewBody
+            | LPAREN() ~ 'Expression ~ RPAREN(),
+    'Dotted ::= LENGTH()
+            | 'Identifier ~  LPAREN() ~ 'Args ~ RPAREN() ~ 'AtomTail,
+    'NewBody ::= INT() ~ LBRACKET() ~ 'Expression ~ RBRACKET()
+               | 'Identifier ~ LPAREN() ~ RPAREN(),
     'Args ::= epsilon() | 'Expression ~ 'ExprList,
     'ExprList ::= epsilon() | COMMA() ~ 'Expression ~ 'ExprList,
-    'Expression ::= IDSENT,
     'Op ::= AND() | OR()| EQUALS() | LESSTHAN() | PLUS() | MINUS() | TIMES() | DIV(),
     'Identifier ::= IDSENT
   ))
