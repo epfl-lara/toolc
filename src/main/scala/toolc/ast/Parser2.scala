@@ -124,15 +124,18 @@ object Parser2 extends Pipeline[Iterator[Token], Unit] {
     'Param ::= 'Identifier ~ COLON() ~ 'Type,
     'Type	::=	INT() ~ 'IntType | BOOLEAN() | STRING() | 'Identifier,
     'IntType ::= LBRACKET() ~ RBRACKET() | epsilon(),
-    'Statement ::= LBRACE() ~ 'Stmts ~ RBRACE()
-      | IF() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'Statement ~ 'ElseOpt
-      | WHILE() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'Statement
-      | PRINTLN() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ SEMICOLON()
-      | 'Identifier ~ 'IdStat
-      | DO() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ SEMICOLON(),
+    'Statement ::=  IF() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'MatchedIf ~ 'ElseOpt
+                |  'SimpleStat,
+    'MatchedIf ::= IF() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'MatchedIf ~ ELSE() ~ 'MatchedIf
+                 | 'SimpleStat,
+    'SimpleStat ::= LBRACE() ~ 'Stmts ~ RBRACE()
+                  | WHILE() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'MatchedIf
+                  | PRINTLN() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ SEMICOLON()
+                  | 'Identifier ~ 'IdStat
+                  | DO() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ SEMICOLON(),
     'IdStat ::= EQSIGN() ~ 'Expression ~ SEMICOLON()
               | LBRACKET() ~ 'Expression ~ RBRACKET() ~ EQSIGN() ~ 'Expression ~ SEMICOLON(),
-    'ElseOpt ::= ELSE() ~ 'Statement | epsilon(),
+    'ElseOpt ::= ELSE() ~ 'MatchedIf | epsilon(),
     'Expression ::= 'Expression ~ 'Op ~ 'Expression
       | 'Expression  ~ LBRACKET() ~ 'Expression ~ RBRACKET()
       | 'Expression ~ DOT() ~ LENGTH()
@@ -145,17 +148,16 @@ object Parser2 extends Pipeline[Iterator[Token], Unit] {
       | LPAREN() ~ 'Expression ~ RPAREN(),
     'Args ::= epsilon() | 'Expression ~ 'ExprList,
     'ExprList ::= epsilon() | COMMA() ~ 'Expression ~ 'ExprList,
+    'Expression ::= IDSENT,
     'Op ::= AND() | OR()| EQUALS() | LESSTHAN() | PLUS() | MINUS() | TIMES() | DIV(),
     'Identifier ::= IDSENT
   ))
-
-
 
   def run(ctx: Context)(tokens: Iterator[Token]): Unit = {
     implicit val gc = new GlobalContext()
     implicit val pc = new ParseContext()
     val list = tokens.toList
-    val ptrees = ParseTreeUtils.parseWithTrees(precGrammar, list)
+    val ptrees = ParseTreeUtils.parseWithTrees(ll1grammar, list)
     println(ParseTreeUtils.parseTreetoString(ptrees(0)))
   }
 
