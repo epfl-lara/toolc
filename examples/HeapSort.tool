@@ -67,9 +67,8 @@ class HS {
 		desc = 2 * k + 1; // First descendant of k
 		
 		while(desc < size){
-			if(desc + 1 < size) // Does k has a second descendant ?
-				if (array[desc] < array[desc + 1])
-					desc = desc + 1; // desc est le plus grand descendant
+			if(desc + 1 < size && array[desc] < array[desc + 1]) // Does k has a second descendant ?
+			    desc = desc + 1; // desc est le plus grand descendant
 			
 			if(array[desc] - 1 < array[k]) { // k have heap property
 				desc = size; // == return
