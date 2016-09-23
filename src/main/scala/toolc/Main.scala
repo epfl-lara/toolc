@@ -75,8 +75,8 @@ object Main {
     val pipeline = if (ctx.doTokens) {
       Lexer andThen DisplayTokens
     } else {
-      Lexer  andThen
-      Parser andThen
+      Lexer andThen DisplayTokens andThen
+      Parser2 /*Parser andThen
         (if (ctx.doPrintMain) {
           DisplayMain
         } else {
@@ -87,7 +87,7 @@ object Main {
           } else {
             CodeGeneration
           })
-        })
+        })*/
     }
 
     pipeline.run(ctx)(ctx.files.head)
