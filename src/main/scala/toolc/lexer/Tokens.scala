@@ -51,21 +51,15 @@ object Tokens {
   case class DO()         extends Token // do(expr)
 
   // Identifiers
-  case class ID(val value: String) extends Token
+  case class ID(val value: String) extends Token with TerminalClass
 
   // Integer literals
-  case class INTLIT(val value: Int) extends Token
+  case class INTLIT(val value: Int) extends Token with TerminalClass
 
   // String literals
-  case class STRINGLIT(val value: String) extends Token
+  case class STRINGLIT(val value: String) extends Token with TerminalClass
 
-  case object IDSENT extends Token with TerminalClass {
-    def contains(obj: Any) = obj.isInstanceOf[ID]
-  }
-  case object INTLITSENT extends Token with TerminalClass {
-    def contains(obj: Any) = obj.isInstanceOf[INTLIT]
-  }
-  case object STRINGLITSENT extends Token with TerminalClass {
-    def contains(obj: Any) = obj.isInstanceOf[STRINGLIT]
-  }
+  val IDSENT = ID("")
+  val INTLITSENT = INTLIT(0)
+  val STRINGLITSENT = STRINGLIT("")  
 }

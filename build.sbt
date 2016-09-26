@@ -30,7 +30,7 @@ ProguardKeys.options in Proguard += ProguardOptions.keepMain("toolc.Main")
 def ghProject(repo: String, version: String) = RootProject(uri(s"${repo}#${version}"))
 val grammars = ghProject(
   "https://github.com/epfl-lara/GrammarComparison.git",
-  "47548f95e33b274844cd94f072c5d99990aecfa4"
+  "824772b31c8b1636c9b220323678f2700d0f5cc9"
 )
 
 lazy val root = (project in file(".")).dependsOn(grammars)
