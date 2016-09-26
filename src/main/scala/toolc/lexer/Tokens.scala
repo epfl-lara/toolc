@@ -50,17 +50,11 @@ object Tokens {
   case class DO()         extends Token // do(expr)
 
   // Identifiers
-  case class ID(val value: String) extends Token {
-    override def toString = "ID("+value+")"
-  }
+  case class ID(val value: String) extends Token
 
   // Integer literals
-  case class INTLIT(val value: Int) extends Token {
-    override def toString = "INT("+value+")"
-  }
+  case class INTLIT(val value: Int) extends Token
 
   // String literals
-  case class STRINGLIT(val value: String) extends Token {
-    override def toString = "STR("+value+")"
-  }
+  case class STRINGLIT(val value: String) extends Token
 }
