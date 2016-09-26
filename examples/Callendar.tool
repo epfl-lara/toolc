@@ -1,4 +1,4 @@
-program Calendar {
+program Callendar {
     println("~~~ October 2011 ~~~");
     println(new CalendarImpl().init(10, 2011).display());
     println("~~ September 1988 ~~");
