@@ -8,34 +8,41 @@ import java.io.File
 object Lexer extends Pipeline[File, Iterator[Token]] {
   import Tokens._
 
-  val keywords: PartialFunction[String, Token] = {
-    case "program"  => PROGRAM()
-    case "class"    => CLASS()
-    case "def"      => DEF()
-    case "var"      => VAR()
-    case "String"   => STRING()
-    case "extends"  => EXTENDS()
-    case "Int"      => INT()
-    case "Bool"     => BOOLEAN()
-    case "while"    => WHILE()
-    case "if"       => IF()
-    case "else"     => ELSE()
-    case "return"   => RETURN()
-    case "length"   => LENGTH()
-    case "true"     => TRUE()
-    case "false"    => FALSE()
-    case "this"     => THIS()
-    case "new"      => NEW()
-    case "println"  => PRINTLN()
-    case "do"       => DO()
+  /** Maps a string s to the corresponding keyword,
+    * or None if it corresponds to no keyword
+    */
+  private def keywords(s: String): Option[Token] = s match {
+    case "program"  => Some(PROGRAM())
+    case "class"    => Some(CLASS())
+    case "def"      => Some(DEF())
+    case "var"      => Some(VAR())
+    case "extends"  => Some(EXTENDS())
+    case "Int"      => Some(INT())
+    case "Bool"     => Some(BOOLEAN())
+    case "String"   => Some(STRING())
+    case "while"    => Some(WHILE())
+    case "if"       => Some(IF())
+    case "else"     => Some(ELSE())
+    case "return"   => Some(RETURN())
+    case "length"   => Some(LENGTH())
+    case "true"     => Some(TRUE())
+    case "false"    => Some(FALSE())
+    case "this"     => Some(THIS())
+    case "new"      => Some(NEW())
+    case "println"  => Some(PRINTLN())
+    case "do"       => Some(DO())
+    case _          => None
   }
 
 
-  /** Reads the contents of a file, caching two characters at a time */
-  class SourceReader(f: File) {
+  /** Reads the contents of a file, caching two characters at a time.
+    * That way we can have a 2-character lookahead with
+    * currentChar and nextChar
+    */
+  private class SourceReader(f: File) {
     private val source = Source.fromFile(f)
 
-    /** What will mark the end of the input stream. */
+    /** We use this character to mark the end of the input stream. */
     val EndOfFile: Char = java.lang.Character.MAX_VALUE
     
     private var currentChar_ : Char = _
@@ -43,8 +50,11 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
     private var currentPos_ : Positioned = _
     private var nextPos_ : Positioned = _
 
+    /** The current character */
     def currentChar = currentChar_
+    /** The next character */
     def nextChar = nextChar_
+    /** The position of the current character */
     def currentPos = currentPos_
 
     private def readChar(): Char = if (source.hasNext) {
@@ -53,18 +63,22 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
       EndOfFile
     }
 
+    /** Consumes a character from the input.
+      * nextChar becomes currentChar,
+      * nextChar points to the first unread character.
+      */
     def consume() = {
       currentChar_ = nextChar_
       currentPos_ = nextPos_
       nextChar_ = readChar()
-      // Skip all '\r's
-      while (nextChar_ == '\r') nextChar_ = readChar()
       nextPos_ = new Positioned{}.setPos(f, source.pos)
     }
 
-    consume()
-    consume()
+    /** Consume n characters */
+    def consume(n: Int): Unit = for (i <- 1 to n) consume()
 
+    // To start, read the first two characters of the file
+    consume(2)
   }
 
 
@@ -81,15 +95,13 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
         consume()
       }
       if (currentChar == '/' && nextChar == '/') {
-        consume()
-        consume()
+        consume(2)
         // Skip until EOL
-        while(currentChar != '\n' && currentChar != EndOfFile) consume()
+        while(currentChar != '\n' && currentChar != '\r' && currentChar != EndOfFile) consume()
         nextToken()
       } else if (currentChar == '/' && nextChar == '*') {
         val pos = currentPos
-        consume()
-        consume()
+        consume(2)
         // Skip everything until */, fail at EOF
         while (!(currentChar == '*' && nextChar == '/')) {
           if (currentChar == EndOfFile) {
@@ -98,16 +110,15 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
             consume()
           }
         }
-        consume()
-        consume()
+        consume(2)
         nextToken()
       } else {
-        readToken
+        readToken()
       }
     }
 
     /** Reads the next token from the stream. */
-    def readToken: Token = {
+    def readToken(): Token = {
       val tokenPos = currentPos
 
       currentChar match {
@@ -120,12 +131,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
             consume()
           } while (Character.isLetterOrDigit(currentChar) || currentChar == '_')
           val str: String = buffer.toString
-          keywords.lift(str) match {
-            case Some(token) =>
-              token.setPos(tokenPos)
-            case None =>
-              ID(str).setPos(tokenPos)
-          }
+          keywords(str).getOrElse(ID(str)).setPos(tokenPos)
 
         case _ if Character.isDigit(currentChar) =>
           val buffer = new StringBuffer
@@ -142,19 +148,18 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
           }
 
         case '"' =>
-          val pos = currentPos
           val buffer = new StringBuffer
           consume()
           while (currentChar != '"') {
-            if (currentChar == '\n' || currentChar == EndOfFile) {
-              fatal("unclosed string literal", pos)
+            if (currentChar == '\n' || currentChar == '\r' || currentChar == EndOfFile) {
+              fatal("unclosed string literal", tokenPos)
             }
             buffer.append(currentChar)
             consume()
           }
           consume()
           val str: String = buffer.toString
-          STRINGLIT(str).setPos(pos)
+          STRINGLIT(str).setPos(tokenPos)
 
         case ':' => consume(); COLON().setPos(tokenPos)
         case ';' => consume(); SEMICOLON().setPos(tokenPos)
@@ -224,6 +229,7 @@ object Lexer extends Pipeline[File, Iterator[Token]] {
   }
 }
 
+/** Reads and displays the tokens, then returns a fresh iterator with the same tokens. */
 object DisplayTokens extends Pipeline[Iterator[Token], Iterator[Token]] {
   def run(ctx: Context)(tokens: Iterator[Token]): Iterator[Token] = {
     val l = tokens.toList

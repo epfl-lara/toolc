@@ -5,13 +5,13 @@ import java.io.File
 
 trait Positioned {
   /** Number of bits used to encode the line number */
-  final val LINE_BITS   = 20
+  private final val LINE_BITS   = 20
   /** Number of bits used to encode the column number */
-  final val COLUMN_BITS = 31 - LINE_BITS // no negatives => 31
+  private final val COLUMN_BITS = 31 - LINE_BITS // no negatives => 31
   /** Mask to decode the line number */
-  final val LINE_MASK   = (1 << LINE_BITS) - 1
+  private final val LINE_MASK   = (1 << LINE_BITS) - 1
   /** Mask to decode the column number */
-  final val COLUMN_MASK = (1 << COLUMN_BITS) - 1 
+  private final val COLUMN_MASK = (1 << COLUMN_BITS) - 1
 
   private[this] def lineOf(pos: Int): Int = (pos >> COLUMN_BITS) & LINE_MASK
   private[this] def columnOf(pos: Int): Int = pos & COLUMN_MASK
@@ -22,8 +22,6 @@ trait Positioned {
   private[Positioned] var _col: Int = 0
 
   def setPos(file: File, pos: Int): this.type = {
-    import scala.io.Position
-
     _line = lineOf(pos)
     _col  = columnOf(pos)
     _file = Some(file)
