@@ -10,6 +10,7 @@ import grammarcomp.grammar._
 import grammarcomp.grammar.CFGrammar._
 import grammarcomp.parsing._
 import GrammarDSL._
+import java.lang.reflect._
 
 object Parser2 extends Pipeline[Iterator[Token], Unit] {
 
@@ -135,9 +136,16 @@ object Parser2 extends Pipeline[Iterator[Token], Unit] {
     'IdStat ::= EQSIGN() ~ 'Expression ~ SEMICOLON()
       | LBRACKET() ~ 'Expression ~ RBRACKET() ~ EQSIGN() ~ 'Expression ~ SEMICOLON(),
     'ElseOpt ::= ELSE() ~ 'Statement | epsilon(),
-    'Expression ::= 'Atom ~ 'Operation,
-    'Operation ::= 'Op ~ 'Expression
-      | epsilon(),
+    'Expression ::=  'Disjunct ~ 'OrExp,
+    'OrExp ::= 'Or ~ 'Expression | epsilon(),
+    'Disjunct ::= 'Expr1 ~ 'AndExp,
+    'AndExp ::= 'And ~ 'Disjunct | epsilon(),
+    'Expr1 ::= 'Expr2 ~ 'RelExp,
+    'RelExp ::= 'RelOp ~ 'Expr1 | epsilon(),
+    'Expr2 ::= 'Factor ~ 'SumExp,
+    'SumExp ::= 'SumOp ~ 'Expr2 | epsilon(),
+    'Factor ::= 'Atom ~ 'MultExp,
+    'MultExp ::= 'MultOp ~ 'Factor | epsilon(),
     'Atom ::= 'SimpleAtom ~ 'AtomTail
       | BANG() ~ 'Atom,
     'AtomTail ::= LBRACKET() ~ 'Expression ~ RBRACKET()
@@ -153,7 +161,11 @@ object Parser2 extends Pipeline[Iterator[Token], Unit] {
       | 'Identifier ~ LPAREN() ~ RPAREN(),
     'Args ::= epsilon() | 'Expression ~ 'ExprList,
     'ExprList ::= epsilon() | COMMA() ~ 'Expression ~ 'ExprList,
-    'Op ::= AND() | OR() | EQUALS() | LESSTHAN() | PLUS() | MINUS() | TIMES() | DIV(),
+    'Or ::= OR(),
+    'And ::= AND(), 
+    'RelOp ::= EQUALS() | LESSTHAN(), 
+    'SumOp ::= PLUS() | MINUS(),
+    'MultOp ::= TIMES() | DIV(),
     'Identifier ::= IDSENT))
 
   def run(ctx: Context)(tokens: Iterator[Token]): Unit = {
@@ -170,19 +182,17 @@ object Parser2 extends Pipeline[Iterator[Token], Unit] {
       val ast = constructAST(ptrees.head)
       println("AST: " + Printer(ast))
       val refAST = Parser.run(ctx)(list.iterator)
-      if(ast != refAST) {
-        throw new Exception(s"Reference AST was different at the Node: ${(t1, t2)}")
-        compareASTs(ast, refAST)        
+      if (ast != refAST) {
+        println("ASTs are not equal!")
+        //throw new Exception(s"Reference AST was different at the Node: ${(t1, t2)}")
+        compareASTs(ast, refAST)
       }
     }
-  }
-    
-  def compareASTs(t1: Tree, t2: Tree): (Tree, Tree) = {
-            
-  }
+  }  
 
-  def constructAST(inptree: ParseTree[Token]): Program = {
-    // Doing casting to avoid creating multiple methods
+  // Ulgy hack: doing casting to avoid creating multiple methods.
+  // Is this a usecase of generalized ADTs ?
+  def constructAST(inptree: ParseTree[Token]): Program = {    
     def recTree(ptree: ParseTree[Token]): Tree = {
       ptree match {
         case Node(Rule(Nonterminal('Goal), _), List(mobj, classdefs, eof)) =>
@@ -190,18 +200,15 @@ object Parser2 extends Pipeline[Iterator[Token], Unit] {
             recTreeList(classdefs).asInstanceOf[List[ClassDecl]])
         case Node(Rule(Nonterminal('MainObject), _), List(_, objid, _, stmts, _)) =>
           MainObject(recId(objid), recTreeList(stmts).asInstanceOf[List[StatTree]])
-        //::=	CLASS() ~ 'Identifier ~ 'OptExtends ~ 'ClassBody,
         case Node(Rule(Nonterminal('ClassDeclaration), _), List(_, id, optextends,
           Node(Rule(Nonterminal('ClassBody), _), List(_, vardecls, methoddecls, _)))) =>
           ClassDecl(recId(id),
             recTreeOpt(optextends).asInstanceOf[Option[Identifier]],
             recTreeList(vardecls).asInstanceOf[List[VarDecl]],
             recTreeList(methoddecls).asInstanceOf[List[MethodDecl]])
-        // 'VarDeclaration	::= VAR() ~ 'Param ~ SEMICOLON(),
         case Node(Rule(Nonterminal('VarDeclaration), _), List(_, param, _)) =>
           val Formal(tpe, id) = recParam(param)
           VarDecl(tpe, id)
-        // 'MethodDeclaration ::= DEF() ~ 'Identifier ~ LPAREN() ~ 'Params ~ RPAREN() ~ COLON() ~ 'Type ~ EQSIGN() ~ LBRACE() ~ 'VarDecs ~ 'Stmts ~ RETURN() ~ 'Expression ~ SEMICOLON() ~ RBRACE(),
         case Node(Rule(Nonterminal('MethodDeclaration), _), List(_, id, _, params, _, _, tpe, _, _, vardecs, stmts, _, expr, _, _)) =>
           MethodDecl(recId(id),
             (recTreeList(params).asInstanceOf[List[Formal]]),
@@ -214,7 +221,6 @@ object Parser2 extends Pipeline[Iterator[Token], Unit] {
 
     def recParam(ptree: ParseTree[Token]): Formal = {
       ptree match {
-        // 'Param ::= 'Identifier ~ COLON() ~ 'Type,
         case Node(Rule(Nonterminal('Param), _), List(id, _, tpe)) =>
           Formal(recType(tpe), recId(id))
       }
@@ -228,37 +234,27 @@ object Parser2 extends Pipeline[Iterator[Token], Unit] {
 
     def recType(ptree: ParseTree[Token]): TypeTree = {
       ptree match {
-        // 'Type	::=	INT() ~ 'IntType
-        // 'IntType ::= LBRACKET() ~ RBRACKET() | epsilon(),
         case Node(Rule(Nonterminal('Type), _), List(_, Node(Rule(Nonterminal('IntType), _), suf))) =>
           if (suf.isEmpty) IntType()
           else IntArrayType()
-        // BOOLEAN() | STRING() | 'Identifier, 
         case Node(Rule(Nonterminal('Type), _), List(Leaf(Terminal(l)))) =>
           l match {
             case BOOLEAN() => BooleanType()
             case STRING()  => StringType()
           }
-        case Node(Rule(Nonterminal('Type), _), List(id)) => // this has to be identifier case
+        case Node(Rule(Nonterminal('Type), _), List(id)) => 
           ClassType(recId(id))
       }
     }
 
     def recStmt(ptree: ParseTree[Token]): StatTree = {
-      // 'Statement ::=  IF() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'MatchedIf ~ 'ElseOpt
       ptree match {
         case Node(Rule(Nonterminal('Statement), Terminal(IF()) :: _), List(_, _, expr, _, matchif, eopt)) =>
           If(recExpr(expr), recStmt(matchif), recTreeOpt(eopt).asInstanceOf[Option[StatTree]])
-        //'MatchedIf ::= IF() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'MatchedIf ~ ELSE() ~ 'MatchedIf
         case Node(Rule(Nonterminal('Statement), Terminal(IF()) :: _), List(_, _, expr, _, thenif, _, eif)) =>
           If(recExpr(expr), recStmt(thenif), Some(recStmt(eif)))
         case Node(Rule(_, List(Nonterminal('SimpleStat))), List(simpstat)) =>
           recStmt(simpstat)
-        /*'SimpleStat ::= LBRACE() ~ 'Stmts ~ RBRACE()
-                  | WHILE() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'MatchedIf
-                  | PRINTLN() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ SEMICOLON()
-                  | 'Identifier ~ 'IdStat
-                  | DO() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ SEMICOLON(),*/
         case Node(Rule(Nonterminal('SimpleStat), Terminal(LBRACE()) :: _), List(_, stmts, _)) =>
           Block(recTreeList(stmts).asInstanceOf[List[StatTree]])
         case Node(Rule(Nonterminal('SimpleStat), Terminal(WHILE()) :: _), List(_, _, expr, _, stmt)) =>
@@ -268,8 +264,6 @@ object Parser2 extends Pipeline[Iterator[Token], Unit] {
         case Node(Rule(Nonterminal('SimpleStat), Terminal(DO()) :: _), List(_, _, expr, _, _)) =>
           DoExpr(recExpr(expr))
         case Node(Rule(Nonterminal('SimpleStat), rhs), List(id, idstat)) =>
-          /*'IdStat ::= EQSIGN() ~ 'Expression ~ SEMICOLON()
-              | LBRACKET() ~ 'Expression ~ RBRACKET() ~ EQSIGN() ~ 'Expression ~ SEMICOLON(),*/
           idstat match {
             case Node(Rule(_, Terminal(EQSIGN()) :: _), List(_, expr, _)) =>
               Assign(recId(id), recExpr(expr))
@@ -280,100 +274,30 @@ object Parser2 extends Pipeline[Iterator[Token], Unit] {
           throw new Exception(s"rhs size: ${rhs.size} chidren nodes: ${children.size}")
       }
     }
-
-    def getOp(ptree: ParseTree[Token]): Token = {
-      ptree match {
-        case Node(_, List(Leaf(Terminal(t)))) => t
-      }
-    }
-
+    
     def recOp(ptree: ParseTree[Token]): (ExprTree, ExprTree) => ExprTree = {
-      getOp(ptree) match {
-        case AND()      => And.apply _
-        case OR()       => Or.apply _
-        case EQUALS()   => Equals.apply _
-        case LESSTHAN() => LessThan.apply _
-        case PLUS()     => Plus.apply _
-        case MINUS()    => Minus.apply _
-        case TIMES()    => Times.apply _
-        case DIV()      => Div.apply _
-      }
-    }
-
-    def precedence(iop1: Token, iop2: Token): Option[Boolean] = {
-      def isArith(op: Token) = op match {
-        case PLUS() | TIMES() | MINUS() | DIV() => true
-        case _                                  => false
-      }
-      def greaterPrec(op1: Token, op2: Token) = (op1, op2) match {
-        case (TIMES() | DIV(), PLUS() | MINUS())   => true
-        case _ if isArith(op1) && !isArith(op2)    => true
-        case (EQUALS() | LESSTHAN(), AND() | OR()) => true
-        case _                                     => false
-      }
-      if (greaterPrec(iop1, iop2)) Some(true)
-      else if (greaterPrec(iop2, iop1)) Some(false)
-      else None
-    }
-
-    def addExprToLeft(leftop: ExprTree, e: ExprTree, op: (ExprTree, ExprTree) => ExprTree): ExprTree = {
-      e match {
-        case And(lhs, rhs) =>
-          And(addExprToLeft(leftop, lhs, op), rhs)
-        case Or(lhs, rhs) =>
-          Or(addExprToLeft(leftop, lhs, op), rhs)
-        case Plus(lhs, rhs) =>
-          Plus(addExprToLeft(leftop, lhs, op), rhs)
-        case Minus(lhs, rhs) =>
-          Minus(addExprToLeft(leftop, lhs, op), rhs)
-        case Times(lhs, rhs) =>
-          Times(addExprToLeft(leftop, lhs, op), rhs)
-        case Div(lhs, rhs) =>
-          Div(addExprToLeft(leftop, lhs, op), rhs)
-        case LessThan(lhs, rhs) =>
-          LessThan(addExprToLeft(leftop, lhs, op), rhs)
-        case Equals(lhs, rhs) =>
-          Equals(addExprToLeft(leftop, lhs, op), rhs)
-        case leaf =>
-          // this is the left most leaf
-          op(leftop, leaf)
-      }
-    }
-
-    def recExpr(ptree: ParseTree[Token]): ExprTree = {
       ptree match {
-        /*'Expression ::= 'Atom ~ 'Operation, 
-         * 'Operation ::= 'Op ~ 'Expression | epsilon(), */
-        case Node(Rule(Nonterminal('Expression), _), List(opd1, oper)) =>
-          val opd1Expr = recExpr(opd1)
-          oper match {
-            case Node(_, List()) => opd1Expr
-            case Node(_, List(op1, expr)) =>
-              val op1Cons = recOp(op1)
-              expr match {
-                case Node(_, List(opd2, Node(_, List()))) =>
-                  op1Cons(opd1Expr, recExpr(opd2)) // some thing like a  + b
-                case Node(_, List(opd2, Node(_, List(op2, otherOpd)))) =>
-                  val opd2Expr = recExpr(opd2)
-                  // we need to check the precedences of op1 and op2
-                  if (precedence(getOp(op1), getOp(op2)) == Some(false)) { // op1 has lesser precedence than op2
-                    op1Cons(opd1Expr, opd2Expr) // some thing like a  + b * c                      
-                  } else {
-                    // here we have either a * b + c or a + b + c
-                    addExprToLeft(opd1Expr, opd2Expr, op1Cons)
-                  }
-              }
-          }
-        /*Atom ::= 'SimpleAtom ~ 'AtomTail
-            |  BANG() ~ 'Atom,*/
+        case Node(_, List(Leaf(Terminal(t)))) => t match {
+          case AND()      => And.apply _
+          case OR()       => Or.apply _
+          case EQUALS()   => Equals.apply _
+          case LESSTHAN() => LessThan.apply _
+          case PLUS()     => Plus.apply _
+          case MINUS()    => Minus.apply _
+          case TIMES()    => Times.apply _
+          case DIV()      => Div.apply _
+        }
+      }
+    }
+        
+    def recExpr(ptree: ParseTree[Token]): ExprTree = {
+      ptree match {          
+        case Node(Rule(Nonterminal(sym), _), List(opd, suf)) if sym == 'Expression || sym == 'Expr2 || sym == 'Expr1 || sym == 'Factor || sym == 'Disjunct =>          
+          recOpExpr(recExpr(opd), suf)        
         case Node(Rule(Nonterminal('Atom), Terminal(BANG()) :: _), List(_, atom)) =>
           Not(recExpr(atom))
         case Node(Rule(Nonterminal('Atom), _), List(simpAtom, atomTail)) =>
           recAtomTail(recExpr(simpAtom), atomTail)
-        /*''SimpleAtom ::= INTLITSENT | STRINGLITSENT
-                | TRUE() | FALSE() | 'Identifier | THIS()
-                | NEW() ~ 'NewBody
-                | LPAREN() ~ 'Expression ~ RPAREN(),*/
         case Node(Rule(_, Terminal(NEW()) :: _), List(_, newbody)) => // new object creation
           newbody match {
             case Node(Rule(_, Terminal(INT()) :: _), List(_, _, sizeexpr, _)) =>
@@ -396,6 +320,30 @@ object Parser2 extends Pipeline[Iterator[Token], Unit] {
       }
     }
 
+    /** 
+     *  'LogicalExp ::= 'LogicalOp ~ 'Expression | epsilon(),
+     * 'RelExp ::= 'RelOp ~ 'Expr1 | epsilon(),
+     * 'SumExp ::= 'SumOp ~ 'Expr2,
+     * 'MultExp ::= 'MultOp ~ 'Factor | epsilon(), 
+         * */
+    def recOpExpr(leftopd: ExprTree, ptree: ParseTree[Token]): ExprTree = {
+      ptree match {
+        case Node(_, List()) => //epsilon rule of the nonterminals
+          leftopd
+        case Node(Rule(Nonterminal(sym), _), List(op, rightNode)) if sym == 'OrExp || sym == 'RelExp || sym == 'SumExp || sym == 'MultExp || sym == 'AndExp =>
+          rightNode match {
+            case Node(_, List(nextOpd, suf)) => // 'Expr? ::= Expr? ~ 'OpExpr,
+              val nextAtom = recExpr(nextOpd)
+              suf match {
+                case Node(_, List()) =>
+                  recOp(op)(leftopd, nextAtom) // some thing like a  + b
+                case Node(_, List(op2, nextNode)) =>
+                  recOpExpr(recOp(op)(leftopd, nextAtom), suf) // captures left associativity
+              }
+          }
+      }
+    }
+
     /**
      * 'AtomTail ::= LBRACKET() ~ 'Expression ~ RBRACKET()
      * | DOT() ~ 'Dotted
@@ -406,9 +354,7 @@ object Parser2 extends Pipeline[Iterator[Token], Unit] {
         case Node(_, List()) => startAtom // epsilon rule
         case Node(Rule(_, Terminal(LBRACKET()) :: _), List(_, index, _)) =>
           ArrayRead(startAtom, recExpr(index))
-        case Node(_, List(_, dotted)) =>
-          /*'Dotted ::= LENGTH()
-            | 'Identifier ~  LPAREN() ~ 'Args ~ RPAREN() ~ 'AtomTail,*/
+        case Node(_, List(_, dotted)) =>          
           dotted match {
             case Node(_, List(Leaf(Terminal(LENGTH())))) => ArrayLength(startAtom)
             case Node(_, List(id, _, args, _, atomTail)) =>
@@ -416,37 +362,26 @@ object Parser2 extends Pipeline[Iterator[Token], Unit] {
               recAtomTail(mcall, atomTail)
           }
       }
-    }
-
+    }    
+    
     /**
-     * All closures
+     * All kleene  closures
      */
     def recTreeList(ptree: ParseTree[Token]): List[Tree] = {
       ptree match {
         // All epsilon productions are handled here,
-        case Node(_, List()) => List()
-        // 'Stmts ::= 'Statement ~ 'Stmts
+        case Node(_, List()) => List()      
+        case Node(Rule(Nonterminal(sym), _), List(decl, decls)) 
+          if sym == 'ClassDecls || sym == 'VarDecs || sym == 'MethodDecs =>
+          recTree(decl) +: recTreeList(decls)
         case Node(Rule(Nonterminal('Stmts), _), List(stmt, stmts)) =>
-          recStmt(stmt) +: recTreeList(stmts)
-        //'ClassDecls ::= 'ClassDeclaration ~ 'ClassDecls | epsilon()
-        case Node(Rule(Nonterminal('ClassDecls), _), List(cdecl, decls)) =>
-          recTree(cdecl) +: recTreeList(decls)
-        //'vardecs
-        case Node(Rule(Nonterminal('VarDecs), _), List(decl, vdecs)) =>
-          recTree(decl) +: recTreeList(vdecs)
-        //'MethodDecs ::= 'MethodDeclaration ~ 'MethodDecs | epsilon(),
-        case Node(Rule(Nonterminal('MethodDecs), _), List(decl, vdecs)) =>
-          recTree(decl) +: recTreeList(vdecs)
-        //'Params ::= epsilon() | 'Param ~ 'ParamList,        
+          recStmt(stmt) :: recTreeList(stmts)                
         case Node(Rule(Nonterminal('Params), _), List(param, paramlist)) =>
           recParam(param) +: recTreeList(paramlist)
-        // 'ParamList ::= epsilon() | COMMA() ~ 'Param ~ 'ParamList,
         case Node(Rule(Nonterminal('ParamList), _), List(_, param, paramlist)) =>
           recParam(param) +: recTreeList(paramlist)
-        /*'Args ::= epsilon() | 'Expression ~ 'ExprList,*/
         case Node(Rule(Nonterminal('Args), _), List(expr, exprlist)) =>
           recExpr(expr) +: recTreeList(exprlist)
-        // 'ExprList ::= epsilon() | COMMA() ~ 'Expression ~ 'ExprList,
         case Node(Rule(Nonterminal('ExprList), _), List(_, expr, exprlist)) =>
           recExpr(expr) +: recTreeList(exprlist)
       }
@@ -455,15 +390,41 @@ object Parser2 extends Pipeline[Iterator[Token], Unit] {
     def recTreeOpt(ptree: ParseTree[Token]): Option[Tree] = {
       ptree match {
         case Node(_, List()) => None
-        /*'ElseOpt ::= ELSE() ~ 'Statement | epsilon(),*/
         case Node(Rule(Nonterminal('ElseOpt), _), List(_, stmt)) =>
           Some(recStmt(stmt))
-        //'OptExtends ::= epsilon() | EXTENDS() ~ 'Identifier,
         case Node(Rule(Nonterminal('OptExtends), _), List(_, id)) =>
           Some(recId(id))
       }
     }
     recTree(inptree).asInstanceOf[Program]
+  }
+  
+  /**
+   * A helper method that uses reflection to compare AST trees.
+   * Used in testing.
+   */
+  def compareASTs(t1: Tree, t2: Tree): Unit = {
+    if (t1.getClass() == t2.getClass()) {
+      val declClass = t1.getClass()      
+      val flds = declClass.getDeclaredFields()
+      flds.foreach(_.setAccessible(true))
+      if (flds.isEmpty)
+        println("Didnt find any field with public modifier:" + declClass.getDeclaredFields().map(_.getName()))
+      flds.foreach { field =>
+        val f1 = field.get(t1)
+        val f2 = field.get(t2)
+        if (f1.isInstanceOf[Tree]) {
+          compareASTs(f1.asInstanceOf[Tree], f2.asInstanceOf[Tree])
+        } else if (f1.isInstanceOf[List[Tree]]) {
+          (f1.asInstanceOf[List[Tree]] zip f2.asInstanceOf[List[Tree]]).foreach {
+            case (x, y) => compareASTs(x, y)
+          }
+        }
+        /*if (f1 != f2)
+          throw new Exception(s"Reference AST was different at the children: ${(f1, f2)}")*/
+      }
+    } else
+      throw new Exception(s"AST: $t1 RefAST: $t2")
   }
 
 }
