@@ -173,12 +173,19 @@ object Parser2 extends Pipeline[Iterator[Token], Unit] {
     implicit val pc = new ParseContext()
     val list = tokens.toList
     if (!GrammarUtils.isLL1(ll1grammar))
-      throw new Exception("The grammar is not LL(1)")
-    val ptrees = ParseTreeUtils.parseWithTrees(ll1grammar, list)
-    //println(ptrees(0))
+      throw new Exception("The grammar is not LL(1)")    
+    val startTime = System.currentTimeMillis()
+    val ptrees = ParseTreeUtils.parseWithTrees(ll1grammar, list)    
+    //val ptreesBU = parseBottomUp(list.map(CFGrammar.Terminal[Token] _))
+    val nextTime = System.currentTimeMillis()
+    println(s"Completed parsing in ${(nextTime - startTime)/1000.0} s")    
+    //println("LL1 trees: "+ptrees(0))
+    //println("BU trees: "+ptreesBU(0))
     if (ptrees.isEmpty) {
       println("Program Not Parsable!")
-    } else {
+      /*if(bupres)
+        throw new Exception("Bottom up parser returned a different result")*/
+    } else {      
       val ast = constructAST(ptrees.head)
       println("AST: " + Printer(ast))
       val refAST = Parser.run(ctx)(list.iterator)
@@ -188,7 +195,14 @@ object Parser2 extends Pipeline[Iterator[Token], Unit] {
         compareASTs(ast, refAST)
       }
     }
-  }  
+  }
+  
+  /* Used only for debugging CYK parser
+   * def parseBottomUp(s: List[Terminal[Token]])(implicit opctx: GlobalContext) = {
+    val cykParser = new CYKParser(ll1grammar.twonfGrammar)
+    //val termclassWord = s.map { t => new grammarcomp.parsing.ParseTreeUtils.TerminalWrapper(t) }.toArray
+    cykParser.parseWithTrees(s).map(t => ParseTreeDSL.mapTree(t))
+  }*/
 
   // Ulgy hack: doing casting to avoid creating multiple methods.
   // Is this a usecase of generalized ADTs ?
