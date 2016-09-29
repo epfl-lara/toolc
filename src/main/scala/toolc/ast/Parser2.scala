@@ -175,26 +175,25 @@ object Parser2 extends Pipeline[Iterator[Token], Unit] {
     if (!GrammarUtils.isLL1(ll1grammar))
       throw new Exception("The grammar is not LL(1)")    
     val startTime = System.currentTimeMillis()
-    val ptrees = ParseTreeUtils.parseWithTrees(ll1grammar, list)    
+    val feedback = ParseTreeUtils.parseWithTrees(ll1grammar, list)    
     //val ptreesBU = parseBottomUp(list.map(CFGrammar.Terminal[Token] _))
     val nextTime = System.currentTimeMillis()
     println(s"Completed parsing in ${(nextTime - startTime)/1000.0} s")    
     //println("LL1 trees: "+ptrees(0))
     //println("BU trees: "+ptreesBU(0))
-    if (ptrees.isEmpty) {
-      println("Program Not Parsable!")
-      /*if(bupres)
-        throw new Exception("Bottom up parser returned a different result")*/
-    } else {      
-      val ast = constructAST(ptrees.head)
-      println("AST: " + Printer(ast))
-      val refAST = Parser.run(ctx)(list.iterator)
-      if (ast != refAST) {
-        println("ASTs are not equal!")
-        //throw new Exception(s"Reference AST was different at the Node: ${(t1, t2)}")
-        compareASTs(ast, refAST)
-      }
-    }
+    feedback match {
+      case s: Success[Token] =>
+        //println("Parsed!")
+        val ast = constructAST(s.parseTrees.head)
+        println("AST: " + Printer(ast))
+        val refAST = Parser.run(ctx)(list.iterator)
+        if (ast != refAST) {
+          println("ASTs are not equal!")
+          //throw new Exception(s"Reference AST was different at the Node: ${(t1, t2)}")
+          compareASTs(ast, refAST)
+        }
+      case fdb => println("Program Not Parsable. Feedback: "+fdb)         
+    }    
   }
   
   /* Used only for debugging CYK parser
