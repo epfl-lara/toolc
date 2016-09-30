@@ -105,7 +105,8 @@ object Parser2 extends Pipeline[Iterator[Token], Unit] {
     'Args ::= LPAREN() ~ RPAREN() | LPAREN() ~ 'ExprList ~ RPAREN(),
     'ExprList ::= 'Expression | 'Expression ~ COMMA() ~ 'ExprList,
     'Op ::= AND() | OR() | EQUALS() | LESSTHAN() | PLUS() | MINUS() | TIMES() | DIV(),
-    'Identifier ::= IDSENT))
+    'Identifier ::= IDSENT
+  ))
 
   val ll1grammar = Grammar('Goal, List[Rules[Token]](
     'Goal ::= 'MainObject ~ 'ClassDecls ~ EOF(),
@@ -166,7 +167,8 @@ object Parser2 extends Pipeline[Iterator[Token], Unit] {
     'RelOp ::= EQUALS() | LESSTHAN(), 
     'SumOp ::= PLUS() | MINUS(),
     'MultOp ::= TIMES() | DIV(),
-    'Identifier ::= IDSENT))
+    'Identifier ::= IDSENT
+  ))
 
   def run(ctx: Context)(tokens: Iterator[Token]): Unit = {
     implicit val gc = new GlobalContext()
