@@ -1,16 +1,15 @@
 package toolc
 package ast
 
-import grammarcomp.parsing.ParseTreeUtils
 import utils._
 import Trees._
 import lexer._
 import lexer.Tokens._
 import grammarcomp.grammar._
-import grammarcomp.grammar.CFGrammar._
+import GrammarUtils.InLL1
+import CFGrammar._
 import grammarcomp.parsing._
 import GrammarDSL._
-import java.lang.reflect._
 
 object Parser2 extends Pipeline[Iterator[Token], Program] {
 
@@ -30,13 +29,24 @@ object Parser2 extends Pipeline[Iterator[Token], Program] {
     'ParamList ::= epsilon() | COMMA() ~ 'Param ~ 'ParamList,
     'Param ::= 'Identifier ~ COLON() ~ 'Type,
     'Type ::= INT() ~ LBRACKET() ~ RBRACKET() | BOOLEAN() | INT() | STRING() | 'Identifier,
-    'Statement ::= LBRACE() ~ 'Stmts ~ RBRACE()
+    /*'Statement ::= LBRACE() ~ 'Stmts ~ RBRACE()
       | IF() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'Statement ~ 'ElseOpt
       | WHILE() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'Statement
       | PRINTLN() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ SEMICOLON()
       | 'Identifier ~ EQSIGN() ~ 'Expression ~ SEMICOLON()
       | 'Identifier ~ LBRACKET() ~ 'Expression ~ RBRACKET() ~ EQSIGN() ~ 'Expression ~ SEMICOLON()
+      | DO() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ SEMICOLON(),*/
+    'Statement ::= IF() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'MatchedIf ~ 'ElseOpt
+      | 'SimpleStat,
+    'MatchedIf ::= IF() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'MatchedIf ~ ELSE() ~ 'MatchedIf
+      | 'SimpleStat,
+    'SimpleStat ::= LBRACE() ~ 'Stmts ~ RBRACE()
+      | WHILE() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'MatchedIf
+      | PRINTLN() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ SEMICOLON()
+      | 'Identifier ~ 'IdStat
       | DO() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ SEMICOLON(),
+    'IdStat ::= EQSIGN() ~ 'Expression ~ SEMICOLON()
+      | LBRACKET() ~ 'Expression ~ RBRACKET() ~ EQSIGN() ~ 'Expression ~ SEMICOLON(),
     'ElseOpt ::= ELSE() ~ 'Statement | epsilon(),
     'Expression ::= 'Expression ~ 'Op ~ 'Expression
       | 'Expression ~ LBRACKET() ~ 'Expression ~ RBRACKET()
@@ -50,61 +60,6 @@ object Parser2 extends Pipeline[Iterator[Token], Program] {
       | LPAREN() ~ 'Expression ~ RPAREN(),
     'Args ::= epsilon() | 'Expression ~ 'ExprList,
     'ExprList ::= epsilon() | COMMA() ~ 'Expression ~ 'ExprList,
-    'Op ::= AND() | OR() | EQUALS() | LESSTHAN() | PLUS() | MINUS() | TIMES() | DIV(),
-    'Identifier ::= IDSENT
-  ))
-
-  val precGrammar = Grammar('Goal, List[Rules[Token]](
-    'Goal ::= 'MainObject ~ 'ClassDecls ~ EOF() | 'MainObject ~ EOF(),
-    'MainObject ::= PROGRAM() ~ 'Identifier ~ LBRACE() ~ 'Stmts ~ RBRACE()
-      | PROGRAM() ~ 'Identifier ~ LBRACE() ~ RBRACE(),
-    'Stmts ::= 'Statement ~ 'Stmts | 'Statement,
-    'ClassDecls ::= 'ClassDeclaration ~ 'ClassDecls | 'ClassDeclaration,
-    'ClassDeclaration ::= CLASS() ~ 'Identifier ~ EXTENDS() ~ 'Identifier ~ 'ClassBody
-      | CLASS() ~ 'Identifier ~ 'ClassBody,
-    'ClassBody ::= LBRACE() ~ 'VarDecs ~ 'MethodDecs ~ RBRACE()
-      | LBRACE() ~ 'VarDecs ~ RBRACE()
-      | LBRACE() ~ 'MethodDecs ~ RBRACE()
-      | LBRACE() ~ RBRACE(),
-    'VarDecs ::= 'VarDeclaration ~ 'VarDecs | 'VarDeclaration,
-    'VarDeclaration ::= VAR() ~ 'Param ~ SEMICOLON(),
-    'MethodDecs ::= 'MethodDeclaration ~ 'MethodDecs | 'MethodDeclaration,
-    'MethodDeclaration ::= DEF() ~ 'Identifier ~ 'ParamsOpt ~ COLON() ~ 'Type ~ EQSIGN() ~ 'MethodBody ~ RETURN() ~ 'Expression ~ SEMICOLON() ~ RBRACE(),
-    'ParamsOpt ::= LPAREN() ~ RPAREN() | LPAREN() ~ 'Params ~ RPAREN(),
-    'Params ::= 'Param ~ COMMA() ~ 'Params | 'Param,
-    'Param ::= 'Identifier ~ COLON() ~ 'Type,
-    'MethodBody ::= LBRACE() ~ 'VarDecs ~ 'Stmts
-      | LBRACE() ~ 'VarDecs
-      | LBRACE() ~ 'Stmts
-      | LBRACE(),
-    'Type ::= INT() ~ LBRACKET() ~ RBRACKET() | BOOLEAN() | INT() | STRING() | 'Identifier,
-    'Statement ::= LBRACE() ~ 'Stmts ~ RBRACE()
-      | IF() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'Statement
-      | IF() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'Statement ~ ELSE() ~ 'Statement
-      | WHILE() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'Statement
-      | PRINTLN() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ SEMICOLON()
-      | 'Identifier ~ EQSIGN() ~ 'Expression ~ SEMICOLON()
-      | 'Identifier ~ LBRACKET() ~ 'Expression ~ RBRACKET() ~ EQSIGN() ~ 'Expression ~ SEMICOLON()
-      | DO() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ SEMICOLON(),
-    'Expression ::= 'Expr7,
-    'Expr7 ::= 'Expr6 | 'Expr7 ~ OR() ~ 'Expr6,
-    'Expr6 ::= 'Expr5 | 'Expr6 ~ AND() ~ 'Expr5,
-    'Expr5 ::= 'Expr4 | 'Expr5 ~ LESSTHAN() ~ 'Expr4 | 'Expr5 ~ EQUALS() ~ 'Expr4,
-    'Expr4 ::= 'Expr3 | 'Expr4 ~ PLUS() ~ 'Expr3 | 'Expr4 ~ MINUS() ~ 'Expr3,
-    'Expr3 ::= 'Expr2 | 'Expr3 ~ TIMES() ~ 'Expr2 | 'Expr3 ~ DIV() ~ 'Expr2,
-    'Expr2 ::= 'Expr1 | BANG() ~ 'Expr2,
-    'Expr1 ::= 'Expr0
-      | 'Expr0 ~ DOT() ~ LENGTH()
-      | 'Expr0 ~ DOT() ~ 'Identifier ~ 'Args
-      | 'Expr0 ~ LBRACKET() ~ 'Expression ~ RBRACKET(),
-    'Expr0 ::= INTLITSENT | STRINGLITSENT
-      | TRUE() | FALSE()
-      | 'Identifier | THIS()
-      | NEW() ~ INT() ~ LBRACKET() ~ 'Expression ~ RBRACKET()
-      | NEW() ~ 'Identifier ~ LPAREN() ~ RPAREN()
-      | LPAREN() ~ 'Expression ~ RPAREN(),
-    'Args ::= LPAREN() ~ RPAREN() | LPAREN() ~ 'ExprList ~ RPAREN(),
-    'ExprList ::= 'Expression | 'Expression ~ COMMA() ~ 'ExprList,
     'Op ::= AND() | OR() | EQUALS() | LESSTHAN() | PLUS() | MINUS() | TIMES() | DIV(),
     'Identifier ::= IDSENT
   ))
@@ -140,12 +95,12 @@ object Parser2 extends Pipeline[Iterator[Token], Program] {
     'ElseOpt ::= ELSE() ~ 'Statement | epsilon(),
     'Expression ::=  'Disjunct ~ 'OrExp,
     'OrExp ::= 'Or ~ 'Expression | epsilon(),
-    'Disjunct ::= 'Expr1 ~ 'AndExp,
+    'Disjunct ::= 'CompExpr ~ 'AndExp,
     'AndExp ::= 'And ~ 'Disjunct | epsilon(),
-    'Expr1 ::= 'Expr2 ~ 'RelExp,
-    'RelExp ::= 'RelOp ~ 'Expr1 | epsilon(),
-    'Expr2 ::= 'Factor ~ 'SumExp,
-    'SumExp ::= 'SumOp ~ 'Expr2 | epsilon(),
+    'CompExpr ::= 'ArithExpr ~ 'RelExp,
+    'RelExp ::= 'RelOp ~ 'CompExpr | epsilon(),
+    'ArithExpr ::= 'Factor ~ 'SumExp,
+    'SumExp ::= 'SumOp ~ 'ArithExpr | epsilon(),
     'Factor ::= 'Atom ~ 'MultExp,
     'MultExp ::= 'MultOp ~ 'Factor | epsilon(),
     'Atom ::= 'SimpleAtom ~ 'AtomTail
@@ -176,10 +131,11 @@ object Parser2 extends Pipeline[Iterator[Token], Program] {
     implicit val gc = new GlobalContext()
     implicit val pc = new ParseContext()
     val list = tokens.toList
-    if (GrammarUtils.isLL1(ll1grammar)) {
-      info("Using LL1 parsing algorithm")
-    } else {
-      warning("Using general CYK parsing algorithm")
+    GrammarUtils.isLL1WithFeedback(ll1grammar) match {
+      case InLL1() =>
+        info("Grammar is in LL1")
+      case other =>
+        warning(other)
     }
     val feedback = ParseTreeUtils.parseWithTrees(ll1grammar, list)
     feedback match {
@@ -189,15 +145,7 @@ object Parser2 extends Pipeline[Iterator[Token], Program] {
         fatal("Program Not Parsable. Feedback: "+fdb)
     }
   }
-  
-  /* Used only for debugging CYK parser
-   * def parseBottomUp(s: List[Terminal[Token]])(implicit opctx: GlobalContext) = {
-    val cykParser = new CYKParser(ll1grammar.twonfGrammar)
-    //val termclassWord = s.map { t => new grammarcomp.parsing.ParseTreeUtils.TerminalWrapper(t) }.toArray
-    cykParser.parseWithTrees(s).map(t => ParseTreeDSL.mapTree(t))
-  }*/
 
-  
   /**
    * A helper method that uses reflection to compare AST trees.
    * Used in testing.

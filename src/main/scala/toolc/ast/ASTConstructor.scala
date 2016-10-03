@@ -111,7 +111,7 @@ object ASTConstructor {
 
     def recExpr(ptree: NodeOrLeaf[Token]): ExprTree = {
       ptree match {
-        case Node(sym ::= _, List(opd, suf)) if sym == 'Expression || sym == 'Expr2 || sym == 'Expr1 || sym == 'Factor || sym == 'Disjunct =>
+        case Node(sym ::= _, List(opd, suf)) if sym == 'Expression || sym == 'ArithExpr || sym == 'CompExpr || sym == 'Factor || sym == 'Disjunct =>
           recOpExpr(recExpr(opd), suf)
         case Node('Atom ::= BANG() :: _, List(_, atom)) =>
           Not(recExpr(atom))
@@ -141,8 +141,8 @@ object ASTConstructor {
 
     /**
       *  'LogicalExp ::= 'LogicalOp ~ 'Expression | epsilon(),
-      * 'RelExp ::= 'RelOp ~ 'Expr1 | epsilon(),
-      * 'SumExp ::= 'SumOp ~ 'Expr2,
+      * 'RelExp ::= 'RelOp ~ 'CompExpr | epsilon(),
+      * 'SumExp ::= 'SumOp ~ 'ArithExpr,
       * 'MultExp ::= 'MultOp ~ 'Factor | epsilon(),
       * */
     def recOpExpr(leftopd: ExprTree, ptree: NodeOrLeaf[Token]): ExprTree = {
