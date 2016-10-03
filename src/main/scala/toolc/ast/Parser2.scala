@@ -13,13 +13,13 @@ import GrammarDSL._
 
 object Parser2 extends Pipeline[Iterator[Token], Program] {
 
-  val toolGrammar = Grammar('Goal, List[Rules[Token]](
-    'Goal ::= 'MainObject ~ 'ClassDecls ~ EOF(),
+  val toolGrammar = Grammar('Program, List[Rules[Token]](
+    'Program ::= 'MainObject ~ 'ClassDecls ~ EOF(),
     'MainObject ::= PROGRAM() ~ 'Identifier ~ LBRACE() ~ 'Stmts ~ RBRACE(),
     'Stmts ::= 'Statement ~ 'Stmts | epsilon(),
     'ClassDecls ::= 'ClassDeclaration ~ 'ClassDecls | epsilon(),
-    'ClassDeclaration ::= CLASS() ~ 'Identifier ~ EXTENDS() ~ 'Identifier ~ 'ClassBody
-      | CLASS() ~ 'Identifier ~ 'ClassBody,
+    'ClassDeclaration ::= CLASS() ~ 'Identifier ~ 'OptExtends ~ 'ClassBody,
+    'OptExtends ::= epsilon() | EXTENDS() ~ 'Identifier,
     'ClassBody ::= LBRACE() ~ 'VarDecs ~ 'MethodDecs ~ RBRACE(),
     'VarDecs ::= 'VarDeclaration ~ 'VarDecs | epsilon(),
     'VarDeclaration ::= VAR() ~ 'Param ~ SEMICOLON(),
@@ -29,13 +29,6 @@ object Parser2 extends Pipeline[Iterator[Token], Program] {
     'ParamList ::= epsilon() | COMMA() ~ 'Param ~ 'ParamList,
     'Param ::= 'Identifier ~ COLON() ~ 'Type,
     'Type ::= INT() ~ LBRACKET() ~ RBRACKET() | BOOLEAN() | INT() | STRING() | 'Identifier,
-    /*'Statement ::= LBRACE() ~ 'Stmts ~ RBRACE()
-      | IF() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'Statement ~ 'ElseOpt
-      | WHILE() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'Statement
-      | PRINTLN() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ SEMICOLON()
-      | 'Identifier ~ EQSIGN() ~ 'Expression ~ SEMICOLON()
-      | 'Identifier ~ LBRACKET() ~ 'Expression ~ RBRACKET() ~ EQSIGN() ~ 'Expression ~ SEMICOLON()
-      | DO() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ SEMICOLON(),*/
     'Statement ::= IF() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'MatchedIf ~ 'ElseOpt
       | 'SimpleStat,
     'MatchedIf ::= IF() ~ LPAREN() ~ 'Expression ~ RPAREN() ~ 'MatchedIf ~ ELSE() ~ 'MatchedIf
@@ -64,8 +57,8 @@ object Parser2 extends Pipeline[Iterator[Token], Program] {
     'Identifier ::= IDSENT
   ))
 
-  val ll1grammar = Grammar('Goal, List[Rules[Token]](
-    'Goal ::= 'MainObject ~ 'ClassDecls ~ EOF(),
+  val ll1grammar = Grammar('Program, List[Rules[Token]](
+    'Program ::= 'MainObject ~ 'ClassDecls ~ EOF(),
     'MainObject ::= PROGRAM() ~ 'Identifier ~ LBRACE() ~ 'Stmts ~ RBRACE(),
     'Stmts ::= 'Statement ~ 'Stmts | epsilon(),
     'ClassDecls ::= 'ClassDeclaration ~ 'ClassDecls | epsilon(),
@@ -140,9 +133,9 @@ object Parser2 extends Pipeline[Iterator[Token], Program] {
     val feedback = ParseTreeUtils.parseWithTrees(ll1grammar, list)
     feedback match {
       case s: Success[Token] =>
-        ASTConstructor.constructAST(s.parseTrees.head)
+        (new ASTConstructor).constructProgram(s.parseTrees.head)
       case fdb =>
-        fatal("Program Not Parsable. Feedback: "+fdb)
+        fatal("Parsing failed: "+fdb)
     }
   }
 

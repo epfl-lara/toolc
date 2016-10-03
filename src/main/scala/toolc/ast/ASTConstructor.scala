@@ -6,215 +6,177 @@ import lexer.Token
 import lexer.Tokens._
 import grammarcomp.parsing._
 
-object ASTConstructor {
+class ASTConstructor {
 
-  // Ulgy hack: doing casting to avoid creating multiple methods.
-  // Is this a usecase of generalized ADTs ?
-  def constructAST(inptree: NodeOrLeaf[Token]): Program = {
-    def recTree(ptree: NodeOrLeaf[Token]): Tree = {
-      ptree match {
-        case Node('Goal ::= _, List(mobj, classdefs, eof)) =>
-          Program(recTree(mobj).asInstanceOf[MainObject],
-            recTreeList(classdefs).asInstanceOf[List[ClassDecl]])
-        case Node('MainObject ::= _, List(_, objid, _, stmts, _)) =>
-          MainObject(recId(objid), recTreeList(stmts).asInstanceOf[List[StatTree]])
-        case Node('ClassDeclaration ::=  _, List(_, id, optextends,
-        Node('ClassBody ::= _, List(_, vardecls, methoddecls, _)))) =>
-          ClassDecl(recId(id),
-            recTreeOpt(optextends).asInstanceOf[Option[Identifier]],
-            recTreeList(vardecls).asInstanceOf[List[VarDecl]],
-            recTreeList(methoddecls).asInstanceOf[List[MethodDecl]])
-        case Node('VarDeclaration ::= _, List(_, param, _)) =>
-          val Formal(tpe, id) = recParam(param)
-          VarDecl(tpe, id)
-        case Node('MethodDeclaration ::= _, List(_, id, _, params, _, _, tpe, _, _, vardecs, stmts, _, expr, _, _)) =>
-          MethodDecl(recId(id),
-            recTreeList(params).asInstanceOf[List[Formal]],
-            recType(tpe),
-            recTreeList(vardecs).asInstanceOf[List[VarDecl]],
-            recTreeList(stmts).asInstanceOf[List[StatTree]],
-            recExpr(expr))
-      }
+  def constructProgram(ptree: NodeOrLeaf[Token]): Program = {
+    ptree match {
+      case Node('Program ::= _, List(mainObj, classDefs, eof)) =>
+        Program(
+          constructMain(mainObj),
+          constructList(classDefs, constructClass)
+        )
     }
-
-    def recParam(ptree: NodeOrLeaf[Token]): Formal = {
-      ptree match {
-        case Node('Param ::= _, List(id, _, tpe)) =>
-          Formal(recType(tpe), recId(id))
-      }
-    }
-
-    def recId(ptree: NodeOrLeaf[Token]): Identifier = {
-      ptree match {
-        case Node('Identifier ::= _, List(Leaf(ID(name)))) =>
-          Identifier(name)
-      }
-    }
-
-    def recType(ptree: NodeOrLeaf[Token]): TypeTree = {
-      ptree match {
-        case Node('Type ::= _, List(_, Node('IntType ::= _, suf))) =>
-          if (suf.isEmpty) IntType()
-          else IntArrayType()
-        case Node('Type ::= _, List(Leaf(l))) =>
-          l match {
-            case BOOLEAN() => BooleanType()
-            case STRING()  => StringType()
-          }
-        case Node('Type ::=  _, List(id)) =>
-          ClassType(recId(id))
-      }
-    }
-
-    def recStmt(ptree: NodeOrLeaf[Token]): StatTree = {
-      ptree match {
-        case Node('Statement ::= IF() :: _, List(_, _, expr, _, matchif, eopt)) =>
-          If(recExpr(expr), recStmt(matchif), recTreeOpt(eopt).asInstanceOf[Option[StatTree]])
-        case Node('Statement ::= IF() :: _, List(_, _, expr, _, thenif, _, eif)) =>
-          If(recExpr(expr), recStmt(thenif), Some(recStmt(eif)))
-        case Node(_ ::= List('SimpleStat), List(simpstat)) =>
-          recStmt(simpstat)
-        case Node('SimpleStat ::= LBRACE() :: _, List(_, stmts, _)) =>
-          Block(recTreeList(stmts).asInstanceOf[List[StatTree]])
-        case Node('SimpleStat ::= WHILE() :: _, List(_, _, expr, _, stmt)) =>
-          While(recExpr(expr), recStmt(stmt))
-        case Node('SimpleStat ::= PRINTLN() :: _, List(_, _, expr, _, _)) =>
-          Println(recExpr(expr))
-        case Node('SimpleStat ::= DO() :: _, List(_, _, expr, _, _)) =>
-          DoExpr(recExpr(expr))
-        case Node('SimpleStat ::= rhs, List(id, idstat)) =>
-          idstat match {
-            case Node(_ ::= EQSIGN() :: _, List(_, expr, _)) =>
-              Assign(recId(id), recExpr(expr))
-            case Node(_, List(_, index, _, _, expr, _)) =>
-              ArrayAssign(recId(id), recExpr(index), recExpr(expr))
-          }
-        /*case Node('Statement ::= rhs, children) =>
-          throw new Exception(s"rhs size: ${rhs.size} chidren nodes: ${children.size}")*/
-      }
-    }
-
-    def recOp(ptree: NodeOrLeaf[Token]): (ExprTree, ExprTree) => ExprTree = {
-      ptree match {
-        case Node(_, List(Leaf(t))) => t match {
-          case AND()      => And
-          case OR()       => Or
-          case EQUALS()   => Equals
-          case LESSTHAN() => LessThan
-          case PLUS()     => Plus
-          case MINUS()    => Minus
-          case TIMES()    => Times
-          case DIV()      => Div
-        }
-      }
-    }
-
-    def recExpr(ptree: NodeOrLeaf[Token]): ExprTree = {
-      ptree match {
-        case Node(sym ::= _, List(opd, suf)) if sym == 'Expression || sym == 'ArithExpr || sym == 'CompExpr || sym == 'Factor || sym == 'Disjunct =>
-          recOpExpr(recExpr(opd), suf)
-        case Node('Atom ::= BANG() :: _, List(_, atom)) =>
-          Not(recExpr(atom))
-        case Node('Atom ::= _, List(simpAtom, atomTail)) =>
-          recAtomTail(recExpr(simpAtom), atomTail)
-        case Node(_ ::= NEW() :: _, List(_, newbody)) => // new object creation
-          newbody match {
-            case Node(_ ::= INT() :: _, List(_, _, sizeexpr, _)) =>
-              NewIntArray(recExpr(sizeexpr))
-            case Node(_, List(id, _, _)) => // class creation
-              New(recId(id))
-          }
-        case Node(_ ::= LPAREN():: _, List(_, expr, _)) =>
-          recExpr(expr)
-        case Node(_, List(Leaf(t))) =>
-          t match {
-            case INTLIT(intval)  => IntLit(intval)
-            case STRINGLIT(name) => StringLit(name)
-            case TRUE()          => True()
-            case FALSE()         => False()
-            case THIS()          => This()
-          }
-        case Node('SimpleAtom ::= _, List(id)) =>
-          Variable(recId(id))
-      }
-    }
-
-    /**
-      *  'LogicalExp ::= 'LogicalOp ~ 'Expression | epsilon(),
-      * 'RelExp ::= 'RelOp ~ 'CompExpr | epsilon(),
-      * 'SumExp ::= 'SumOp ~ 'ArithExpr,
-      * 'MultExp ::= 'MultOp ~ 'Factor | epsilon(),
-      * */
-    def recOpExpr(leftopd: ExprTree, ptree: NodeOrLeaf[Token]): ExprTree = {
-      ptree match {
-        case Node(_, List()) => //epsilon rule of the nonterminals
-          leftopd
-        case Node(sym ::= _, List(op, rightNode)) if sym == 'OrExp || sym == 'RelExp || sym == 'SumExp || sym == 'MultExp || sym == 'AndExp =>
-          rightNode match {
-            case Node(_, List(nextOpd, suf)) => // 'Expr? ::= Expr? ~ 'OpExpr,
-              val nextAtom = recExpr(nextOpd)
-              suf match {
-                case Node(_, List()) =>
-                  recOp(op)(leftopd, nextAtom) // some thing like a  + b
-                case Node(_, List(op2, nextNode)) =>
-                  recOpExpr(recOp(op)(leftopd, nextAtom), suf) // captures left associativity
-              }
-          }
-      }
-    }
-
-    /**
-      * 'AtomTail ::= LBRACKET() ~ 'Expression ~ RBRACKET()
-      * | DOT() ~ 'Dotted
-      * | epsilon(),
-      */
-    def recAtomTail(startAtom: ExprTree, ptree: NodeOrLeaf[Token]): ExprTree = {
-      ptree match {
-        case Node(_, List()) => startAtom // epsilon rule
-        case Node(_ ::= LBRACKET() :: _, List(_, index, _)) =>
-          ArrayRead(startAtom, recExpr(index))
-        case Node(_, List(_, dotted)) =>
-          dotted match {
-            case Node(_, List(Leaf(LENGTH()))) => ArrayLength(startAtom)
-            case Node(_, List(id, _, args, _, atomTail)) =>
-              val mcall = MethodCall(startAtom, recId(id), recTreeList(args).asInstanceOf[List[ExprTree]])
-              recAtomTail(mcall, atomTail)
-          }
-      }
-    }
-
-    /**
-      * All kleene  closures
-      */
-    def recTreeList(ptree: NodeOrLeaf[Token]): List[Tree] = {
-      ptree match {
-        // All epsilon productions are handled here,
-        case Node(_, List()) => List()
-        case Node(sym ::= _, List(decl, decls))
-          if sym == 'ClassDecls || sym == 'VarDecs || sym == 'MethodDecs =>
-          recTree(decl) +: recTreeList(decls)
-        case Node('Stmts ::=  _, List(stmt, stmts)) =>
-          recStmt(stmt) :: recTreeList(stmts)
-        case Node('Params ::= _, List(param, paramlist)) =>
-          recParam(param) +: recTreeList(paramlist)
-        case Node('ParamList ::=  _, List(_, param, paramlist)) =>
-          recParam(param) +: recTreeList(paramlist)
-        case Node('Args ::= _, List(expr, exprlist)) =>
-          recExpr(expr) +: recTreeList(exprlist)
-        case Node('ExprList ::=  _, List(_, expr, exprlist)) =>
-          recExpr(expr) +: recTreeList(exprlist)
-      }
-    }
-
-    def recTreeOpt(ptree: NodeOrLeaf[Token]): Option[Tree] = {
-      ptree match {
-        case Node(_, List()) => None
-        case Node('ElseOpt ::= _, List(_, stmt)) =>
-          Some(recStmt(stmt))
-        case Node('OptExtends ::=  _, List(_, id)) =>
-          Some(recId(id))
-      }
-    }
-    recTree(inptree).asInstanceOf[Program]
   }
+  def constructMain(ptree: NodeOrLeaf[Token]): MainObject = {
+    ptree match {
+      case Node('MainObject ::= _, List(_, objid, _, stmts, _)) =>
+        MainObject(constructId(objid), constructList(stmts, constructStatement))
+    }
+  }
+
+  def constructClass(ptree: NodeOrLeaf[Token]): ClassDecl = {
+    ptree match {
+      case Node(
+        'ClassDeclaration ::=  _,
+        List(_, id, optextends, Node('ClassBody ::= _, List(_, vardecls, methoddecls, _)))
+      ) =>
+        ClassDecl(
+          constructId(id),
+          constructOption(optextends, constructId),
+          constructList(vardecls, constructVarDecl),
+          constructList(methoddecls, constructMethodDecl)
+        )
+    }
+  }
+
+  def constructVarDecl(ptree: NodeOrLeaf[Token]): VarDecl = ptree match {
+    case Node('VarDeclaration ::= _, List(_, param, _)) =>
+      val Formal(tpe, id) = constructParam(param)
+      VarDecl(tpe, id)
+  }
+
+  def constructMethodDecl(ptree: NodeOrLeaf[Token]): MethodDecl = ptree match {
+    case Node('MethodDeclaration ::= _, List(_, id, _, params, _, _, tpe, _, _, vardecs, stmts, _, expr, _, _)) =>
+      MethodDecl(
+        constructId(id),
+        constructList(params, constructParam, hasComma = true),
+        constructType(tpe),
+        constructList(vardecs, constructVarDecl),
+        constructList(stmts, constructStatement),
+        constructExpr(expr)
+      )
+  }
+
+  def constructParam(ptree: NodeOrLeaf[Token]): Formal = {
+    ptree match {
+      case Node('Param ::= _, List(id, _, tpe)) =>
+        Formal(constructType(tpe), constructId(id))
+    }
+  }
+
+  def constructId(ptree: NodeOrLeaf[Token]): Identifier = {
+    ptree match {
+      case Node('Identifier ::= _, List(Leaf(ID(name)))) =>
+        Identifier(name)
+    }
+  }
+
+  def constructType(ptree: NodeOrLeaf[Token]): TypeTree = {
+    ptree match {
+      case Node('Type ::= List(INT()), _) =>
+        IntType()
+      case Node('Type ::= List(INT(), LBRACKET(), RBRACKET()), _) =>
+        IntArrayType()
+      case Node('Type ::= List(BOOLEAN()), _) =>
+        BooleanType()
+      case Node('Type ::= List(STRING()), _) =>
+        StringType()
+      case Node('Type ::= List(IDSENT), List(id)) =>
+        ClassType(constructId(id))
+    }
+  }
+
+
+  def constructStatement(ptree: NodeOrLeaf[Token]): StatTree = {
+    ptree match {
+      case Node('Statement ::= IF() :: _, List(_, _, expr, _, matchif, eopt)) =>
+        If(constructExpr(expr), constructStatement(matchif), constructOption(eopt, constructStatement))
+      case Node('Statement ::= IF() :: _, List(_, _, expr, _, thenif, _, eif)) =>
+        If(constructExpr(expr), constructStatement(thenif), Some(constructStatement(eif)))
+      case Node(_ ::= List('SimpleStat), List(simpstat)) =>
+        constructStatement(simpstat)
+      case Node('SimpleStat ::= LBRACE() :: _, List(_, stmts, _)) =>
+        Block(constructList(stmts, constructStatement))
+      case Node('SimpleStat ::= WHILE() :: _, List(_, _, expr, _, stmt)) =>
+        While(constructExpr(expr), constructStatement(stmt))
+      case Node('SimpleStat ::= PRINTLN() :: _, List(_, _, expr, _, _)) =>
+        Println(constructExpr(expr))
+      case Node('SimpleStat ::= DO() :: _, List(_, _, expr, _, _)) =>
+        DoExpr(constructExpr(expr))
+      case Node('SimpleStat ::= rhs, List(id, idstat)) =>
+        idstat match {
+          case Node(_ ::= EQSIGN() :: _, List(_, expr, _)) =>
+            Assign(constructId(id), constructExpr(expr))
+          case Node(_, List(_, index, _, _, expr, _)) =>
+            ArrayAssign(constructId(id), constructExpr(index), constructExpr(expr))
+        }
+    }
+  }
+
+  def constructOp(ptree: NodeOrLeaf[Token]): (ExprTree, ExprTree) => ExprTree = {
+    ptree match {
+      case Node(_, List(Leaf(t))) => (t: @unchecked) match {
+        case AND()      => And
+        case OR()       => Or
+        case EQUALS()   => Equals
+        case LESSTHAN() => LessThan
+        case PLUS()     => Plus
+        case MINUS()    => Minus
+        case TIMES()    => Times
+        case DIV()      => Div
+      }
+    }
+  }
+
+  def constructExpr(ptree: NodeOrLeaf[Token]): ExprTree = {
+    ptree match {
+      case Node('Expression ::= List('Expression, 'Op, 'Expression), List(e1, op, e2)) =>
+        constructOp(op)(constructExpr(e1), constructExpr(e2))
+      case Node('Expression ::= List('Expression, LBRACKET(), 'Expression, RBRACKET()), List(e1, _, e2, _)) =>
+        ArrayRead(constructExpr(e1), constructExpr(e2))
+      case Node('Expression ::= List('Expression, DOT(), LENGTH()), List(e, _, _)) =>
+        ArrayLength(constructExpr(e))
+      case Node('Expression ::= List('Expression, DOT(), 'Identifier, LPAREN(), 'Args, RPAREN()), List(e, _, id, _, as, _)) =>
+        MethodCall(constructExpr(e), constructId(id), constructList(as, constructExpr, hasComma = true))
+      case Node('Expression ::= List(INTLITSENT), List(Leaf(INTLIT(i)))) =>
+        IntLit(i)
+      case Node('Expression ::= List(STRINGLITSENT), List(Leaf(STRINGLIT(s)))) =>
+        StringLit(s)
+      case Node('Expression ::= List(TRUE()), _) =>
+        True()
+      case Node('Expression ::= List(FALSE()), _) =>
+        False()
+      case Node('Expression ::= List('Identifier), List(id)) =>
+        Variable(constructId(id))
+      case Node('Expression ::= List(THIS()), _) =>
+        This()
+      case Node('Expression ::= List(NEW(), INT(), LBRACKET(), 'Expression, RBRACKET()), List(_, _, _, e, _)) =>
+        NewIntArray(constructExpr(e))
+      case Node('Expression ::= List(NEW(), 'Identifier, LPAREN(), RPAREN()), List(_, id, _, _)) =>
+        New(constructId(id))
+      case Node('Expression ::= List(BANG(), 'Expression), List(_, e)) =>
+        Not(constructExpr(e))
+      case Node('Expression ::= List(LPAREN(), 'Expression, RPAREN()), List(_, e, _)) =>
+        constructExpr(e)
+    }
+  }
+
+  def constructList[A](ptree: NodeOrLeaf[Token], constructor: NodeOrLeaf[Token] => A, hasComma: Boolean = false): List[A] = {
+    ptree match {
+      case Node(_, List()) => List()
+      case Node(_, List(t, ts)) =>
+        constructor(t) :: constructList(ts, constructor, hasComma)
+      case Node(_, List(Leaf(COMMA()), t, ts)) if hasComma =>
+        constructor(t) :: constructList(ts, constructor, hasComma)
+    }
+  }
+
+  def constructOption[A](ptree: NodeOrLeaf[Token], constructor: NodeOrLeaf[Token] => A): Option[A] = {
+    ptree match {
+      case Node(_, List()) => None
+      case Node(_, List(_, t)) =>
+        Some(constructor(t))
+    }
+  }
+
 }
