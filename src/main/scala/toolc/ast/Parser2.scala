@@ -133,7 +133,7 @@ object Parser2 extends Pipeline[Iterator[Token], Program] {
     val feedback = ParseTreeUtils.parseWithTrees(ll1grammar, list)
     feedback match {
       case s: Success[Token] =>
-        (new ASTConstructor).constructProgram(s.parseTrees.head)
+        (new ASTConstructorLL1).constructProgram(s.parseTrees.head)
       case fdb =>
         fatal("Parsing failed: "+fdb)
     }
