@@ -27,10 +27,10 @@ ProguardKeys.inputFilter in Proguard := { file =>
 
 ProguardKeys.options in Proguard += ProguardOptions.keepMain("toolc.Main")
 
-def ghProject(repo: String, version: String) = RootProject(uri(s"${repo}#${version}"))
-val grammars = ghProject(
-  "https://github.com/epfl-lara/GrammarComparison.git",
-  "8f6963a8e3c9006ae5cac33a8c0a52d26c070856"
-)
+//def ghProject(repo: String, version: String) = RootProject(uri(s"${repo}#${version}"))
+//val grammars = ghProject(
+//  "https://github.com/epfl-lara/GrammarComparison.git",
+//  "8f6963a8e3c9006ae5cac33a8c0a52d26c070856"
+//)
 
-lazy val root = (project in file(".")).dependsOn(grammars)
+//lazy val root = (project in file(".")).dependsOn(grammars)
