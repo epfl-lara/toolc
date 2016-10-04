@@ -76,7 +76,7 @@ object Main {
       Lexer andThen DisplayTokens
     } else {
       Lexer andThen
-      Parser2 andThen
+      Parser andThen
         (if (ctx.doPrintMain) {
           DisplayMain
         } else {
