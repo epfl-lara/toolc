@@ -33,6 +33,10 @@ object Main {
         ctx = ctx.copy(doTokens = true)
         processOption(args)
 
+      case "--tree" :: args =>
+        ctx = ctx.copy(printTree = true)
+        processOption(args)
+
       case "-d" :: out :: args =>
         ctx = ctx.copy(outDir = Some(new File(out)))
         processOption(args)
@@ -63,8 +67,9 @@ object Main {
     println("Options include:")
     println(" --help        displays this help")
     println(" --tokens      displays the list of tokens")
+    println(" --tree        displays the parsed tree")
     println(" --eval        evaluate the program directly instead of generating code")
-    println(" --main        displays the name of the main object and: exits")
+    println(" --main        displays the name of the main object and exits")
     println(" -d <outdir>   generates class files in the specified directory")
   }
 
@@ -79,6 +84,8 @@ object Main {
       Parser andThen
         (if (ctx.doPrintMain) {
           DisplayMain
+        } else if (ctx.printTree) {
+          PrintingPhase
         } else {
           NameAnalysis andThen
           TypeChecking andThen
