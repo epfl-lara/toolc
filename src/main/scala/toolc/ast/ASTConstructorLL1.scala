@@ -17,7 +17,7 @@ class ASTConstructorLL1 extends ASTConstructor {
         BooleanType()
       case Node('Type ::= List(STRING()), _) =>
         StringType()
-      case Node('Type ::= List(IDSENT), List(id)) =>
+      case Node('Type ::= List('Identifier), List(id)) =>
         ClassType(constructId(id))
     }
   }
