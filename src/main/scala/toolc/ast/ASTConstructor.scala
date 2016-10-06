@@ -42,6 +42,7 @@ class ASTConstructor {
 
   def constructVarDecl(ptree: NodeOrLeaf[Token]): VarDecl = ptree match {
     case Node('VarDeclaration ::= _, List(Leaf(vr), param, _)) =>
+      // Use the parser for parameters which we already have
       val Formal(tpe, id) = constructParam(param)
       VarDecl(tpe, id).setPos(vr)
   }
@@ -172,6 +173,20 @@ class ASTConstructor {
     }
   }
 
+  /** Extracts a List of elements of a generic type A, possibly separated by commas,
+    * from a parse tree, by repeating a given parser.
+    *
+    * The form of the parse tree has to be specific: (t, ts) if there is no
+    * comma, and (COMMA(), t, ts) if there is a comma, where t is the tree corresponding
+    * to the first element and ts to the rest. Thankfully, this is the case every time
+    * we need to parse a List in Tool.
+    *
+    * @param ptree The input parse tree
+    * @param constructor A transformer for an individual object
+    * @param hasComma Whether the elements of the list are separated by a COMMA()
+    * @tparam A The type of List elements
+    * @return A list of parsed elements of type A
+    */
   def constructList[A](ptree: NodeOrLeaf[Token], constructor: NodeOrLeaf[Token] => A, hasComma: Boolean = false): List[A] = {
     ptree match {
       case Node(_, List()) => List()
@@ -182,6 +197,17 @@ class ASTConstructor {
     }
   }
 
+  /** Optionally extract an element from a parse tree.
+    *
+    * The parse tree has to have a specific form: empty production will result in None,
+    * and an operator (which will be ignored) followed by the element we need to extract
+    * in case of Some.
+    *
+    * @param ptree The input parse tree
+    * @param constructor The extractor of the element if it is present
+    * @tparam A The type of the element
+    * @return The element wrapped in Some(), or None if the production is empty.
+    */
   def constructOption[A](ptree: NodeOrLeaf[Token], constructor: NodeOrLeaf[Token] => A): Option[A] = {
     ptree match {
       case Node(_, List()) => None
