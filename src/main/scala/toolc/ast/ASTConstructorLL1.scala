@@ -10,15 +10,18 @@ class ASTConstructorLL1 extends ASTConstructor {
 
   override def constructType(ptree: NodeOrLeaf[Token]): TypeTree = {
     ptree match {
-      case Node('Type ::= _, List(_, Node('IntType ::= _, suf))) =>
-        if (suf.isEmpty) IntType()
-        else IntArrayType()
-      case Node('Type ::= List(BOOLEAN()), _) =>
-        BooleanType()
-      case Node('Type ::= List(STRING()), _) =>
-        StringType()
+      case Node('Type ::= _, List(Leaf(nt), Node('IntType ::= _, suf))) =>
+        (
+          if (suf.isEmpty) IntType()
+          else IntArrayType()
+        ).setPos(nt)
+      case Node('Type ::= _, List(Leaf(bt@BOOLEAN()))) =>
+        BooleanType().setPos(bt)
+      case Node('Type ::= _, List(Leaf(st@STRING()))) =>
+        StringType().setPos(st)
       case Node('Type ::= List('Identifier), List(id)) =>
-        ClassType(constructId(id))
+        val pid = constructId(id)
+        ClassType(pid).setPos(pid)
     }
   }
 
@@ -27,29 +30,31 @@ class ASTConstructorLL1 extends ASTConstructor {
     ptree match {
       case Node(sym ::= _, List(opd, suf)) if sym == 'Expression || sym == 'ArithExpr || sym == 'CompExpr || sym == 'Factor || sym == 'Disjunct =>
         constructOpExpr(constructExpr(opd), suf)
-      case Node('Atom ::= BANG() :: _, List(_, atom)) =>
-        Not(constructExpr(atom))
+      case Node('Atom ::= BANG() :: _, List(Leaf(bt), atom)) =>
+        Not(constructExpr(atom)).setPos(bt)
       case Node('Atom ::= _, List(simpAtom, atomTail)) =>
-        constructAtomTail(constructExpr(simpAtom), atomTail)
-      case Node(_ ::= NEW() :: _, List(_, newbody)) => // new object creation
-        newbody match {
+        val psa = constructExpr(simpAtom)
+        constructAtomTail(psa, atomTail).setPos(psa)
+      case Node(_ ::= NEW() :: _, List(Leaf(nt), newbody)) => // new object creation
+        (newbody match {
           case Node(_ ::= INT() :: _, List(_, _, sizeexpr, _)) =>
             NewIntArray(constructExpr(sizeexpr))
           case Node(_, List(id, _, _)) => // class creation
             New(constructId(id))
-        }
-      case Node(_ ::= LPAREN():: _, List(_, expr, _)) =>
-        constructExpr(expr)
+        }).setPos(nt)
+      case Node(_ ::= LPAREN():: _, List(Leaf(lp), expr, _)) =>
+        constructExpr(expr).setPos(lp)
       case Node(_, List(Leaf(t))) =>
-        (t: @unchecked) match {
+        ((t: @unchecked) match {
           case INTLIT(intval)  => IntLit(intval)
           case STRINGLIT(name) => StringLit(name)
           case TRUE()          => True()
           case FALSE()         => False()
           case THIS()          => This()
-        }
+        }).setPos(t)
       case Node('SimpleAtom ::= _, List(id)) =>
-        Variable(constructId(id))
+        val pid = constructId(id)
+        Variable(pid).setPos(pid)
     }
   }
 
@@ -67,12 +72,7 @@ class ASTConstructorLL1 extends ASTConstructor {
         rightNode match {
           case Node(_, List(nextOpd, suf)) => // 'Expr? ::= Expr? ~ 'OpExpr,
             val nextAtom = constructExpr(nextOpd)
-            suf match {
-              case Node(_, List()) =>
-                constructOp(op)(leftopd, nextAtom) // some thing like a  + b
-              case Node(_, List(op2, nextNode)) =>
-                constructOpExpr(constructOp(op)(leftopd, nextAtom), suf) // captures left associativity
-            }
+            constructOpExpr(constructOp(op)(leftopd, nextAtom).setPos(leftopd), suf) // captures left associativity
         }
     }
   }
@@ -92,7 +92,7 @@ class ASTConstructorLL1 extends ASTConstructor {
           case Node(_, List(Leaf(LENGTH()))) => ArrayLength(startAtom)
           case Node(_, List(id, _, args, _, atomTail)) =>
             val mcall = MethodCall(startAtom, constructId(id), constructList(args, constructExpr, hasComma = true).asInstanceOf[List[ExprTree]])
-            constructAtomTail(mcall, atomTail)
+            constructAtomTail(mcall, atomTail).setPos(mcall)
         }
     }
   }
