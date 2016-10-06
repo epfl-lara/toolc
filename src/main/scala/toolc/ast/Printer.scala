@@ -22,7 +22,10 @@ object Printer {
         case Lined(docs, sep) =>
           sb append ("  " * ind)
           // Hack: We don't want to reprint the indentation, so we pass 0
-          docs.init foreach { d => rec(d)(0); rec(sep)(0) }
+          docs.init foreach { d =>
+            rec(d)(0)
+            rec(sep)(0)
+          }
           rec(docs.last)(0)
         case Stacked(Nil) => // skip
         case Stacked(docs) =>
@@ -76,7 +79,7 @@ object Printer {
         s"var $id: " <:> rec(tpe) <:> ";"
       case MethodDecl(id, args, retType, vars, stats, retExpr) =>
         Stacked(
-          "def " <:> rec(id) <:> "(" <:> Lined(args map rec, ", ") <:> "): " <:> rec(retType) <:> " {",
+          "def " <:> rec(id) <:> "(" <:> Lined(args map rec, ", ") <:> "): " <:> rec(retType) <:> " = {",
           Indented(Stacked(
             (vars map rec) ++
             (stats map rec) :+
