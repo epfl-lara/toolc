@@ -59,7 +59,7 @@ class ASTConstructorLL1 extends ASTConstructor {
   }
 
   /**
-    *  'LogicalExp ::= 'LogicalOp ~ 'Expression | epsilon(),
+    * 'LogicalExp ::= 'LogicalOp ~ 'Expression | epsilon(),
     * 'RelExp ::= 'RelOp ~ 'CompExpr | epsilon(),
     * 'SumExp ::= 'SumOp ~ 'ArithExpr,
     * 'MultExp ::= 'MultOp ~ 'Factor | epsilon(),
@@ -91,7 +91,7 @@ class ASTConstructorLL1 extends ASTConstructor {
         dotted match {
           case Node(_, List(Leaf(LENGTH()))) => ArrayLength(startAtom)
           case Node(_, List(id, _, args, _, atomTail)) =>
-            val mcall = MethodCall(startAtom, constructId(id), constructList(args, constructExpr, hasComma = true))
+            val mcall = MethodCall(startAtom, constructId(id), constructList(args, constructExpr, hasComma = true)).setPos(startAtom)
             constructAtomTail(mcall, atomTail).setPos(mcall)
         }
     }

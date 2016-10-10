@@ -76,13 +76,13 @@ class ASTConstructor {
 
   def constructType(ptree: NodeOrLeaf[Token]): TypeTree = {
     ptree match {
-      case Node('Type ::= List(i@INT()), _) =>
+      case Node('Type ::= _, List(Leaf(i@INT()))) =>
         IntType().setPos(i)
-      case Node('Type ::= List(i@INT(), LBRACKET(), RBRACKET()), _) =>
+      case Node('Type ::= List(INT(), LBRACKET(), RBRACKET()), List(Leaf(i@INT()), _, _)) =>
         IntArrayType().setPos(i)
-      case Node('Type ::= List(b@BOOLEAN()), _) =>
+      case Node('Type ::= _, List(Leaf(b@BOOLEAN()))) =>
         BooleanType().setPos(b)
-      case Node('Type ::= List(s@STRING()), _) =>
+      case Node('Type ::= _, List(Leaf(s@STRING()))) =>
         StringType().setPos(s)
       case Node('Type ::= List(IDSENT), List(id)) =>
         val pid = constructId(id)
