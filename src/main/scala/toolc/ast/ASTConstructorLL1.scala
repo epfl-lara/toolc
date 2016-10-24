@@ -85,11 +85,12 @@ class ASTConstructorLL1 extends ASTConstructor {
   def constructAtomTail(startAtom: ExprTree, ptree: NodeOrLeaf[Token]): ExprTree = {
     ptree match {
       case Node(_, List()) => startAtom // epsilon rule
-      case Node(_ ::= LBRACKET() :: _, List(_, index, _)) =>
-        ArrayRead(startAtom, constructExpr(index))
+      case Node(_ ::= LBRACKET() :: _, List(_, index, _, atomTail)) =>
+        constructAtomTail(ArrayRead(startAtom, constructExpr(index)), atomTail).setPos(startAtom)
       case Node(_, List(_, dotted)) =>
         dotted match {
-          case Node(_, List(Leaf(LENGTH()))) => ArrayLength(startAtom)
+          case Node(_, List(Leaf(LENGTH()), atomTail)) =>
+            constructAtomTail(ArrayLength(startAtom), atomTail).setPos(startAtom)
           case Node(_, List(id, _, args, _, atomTail)) =>
             val mcall = MethodCall(startAtom, constructId(id), constructList(args, constructExpr, hasComma = true)).setPos(startAtom)
             constructAtomTail(mcall, atomTail).setPos(mcall)

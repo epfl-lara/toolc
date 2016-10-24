@@ -102,10 +102,10 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       | TRUE() | FALSE() | 'Identifier | THIS()
       | NEW() ~ 'NewBody
       | LPAREN() ~ 'Expression ~ RPAREN(),
-    'AtomTail ::= LBRACKET() ~ 'Expression ~ RBRACKET()
+    'AtomTail ::= LBRACKET() ~ 'Expression ~ RBRACKET() ~ 'AtomTail
       | DOT() ~ 'Dotted
       | epsilon(),
-    'Dotted ::= LENGTH()
+    'Dotted ::= LENGTH() ~ 'AtomTail
       | 'Identifier ~ LPAREN() ~ 'Args ~ RPAREN() ~ 'AtomTail,
     'NewBody ::= INT() ~ LBRACKET() ~ 'Expression ~ RBRACKET()
       | 'Identifier ~ LPAREN() ~ RPAREN(),
