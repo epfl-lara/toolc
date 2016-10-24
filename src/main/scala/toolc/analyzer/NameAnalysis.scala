@@ -16,7 +16,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
       val global = new GlobalScope
 
-      if(prog.main.id.value.equals("Object")) {
+      if(prog.main.id.value == "Object") {
         error("The main object cannot be named Object.", prog.main.id)
       }
 
@@ -30,11 +30,11 @@ object NameAnalysis extends Pipeline[Program, Program] {
       for (c <- prog.classes) {
         val name = c.id.value
 
-        if(name.equals(mcSym.name)) {
+        if(name == mcSym.name) {
           error(s"Class $name has the same name as the main class.", c.id)
         }
 
-        if(name.equals("Object")) {
+        if(name == "Object") {
           error("No class can be named Object", c.id)
         }
 
