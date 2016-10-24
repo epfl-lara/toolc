@@ -10,8 +10,6 @@ object NameAnalysis extends Pipeline[Program, Program] {
   def run(ctx: Context)(prog: Program): Program = {
     import ctx.reporter._
 
-    var varUsage = Map[VariableSymbol,Boolean]()
-
     def collectSymbols(prog: Program): GlobalScope = {
 
       val global = new GlobalScope
@@ -124,7 +122,6 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
               case None =>
                 val varSym = new VariableSymbol(varName).setPos(varDecl)
-                varUsage += (varSym -> false)
                 varDecl.setSymbol(varSym)
                 varDecl.id.setSymbol(varSym)
                 classSym.members += (varName -> varSym)
@@ -185,7 +182,6 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
                   case None =>
                     val varSym = new VariableSymbol(varName).setPos(varDecl.id)
-                    varUsage += (varSym -> false)
                     varDecl.id.setSymbol(varSym)
                     varDecl.setSymbol(varSym)
                     methSym.members += (varName -> varSym)
@@ -319,7 +315,6 @@ object NameAnalysis extends Pipeline[Program, Program] {
           error("Undeclared identifier: " + id.value + ".", id)
         case Some(sym) =>
           id.setSymbol(sym)
-          varUsage += sym -> true
       }
     }
 
@@ -399,10 +394,6 @@ object NameAnalysis extends Pipeline[Program, Program] {
     terminateIfErrors()
 
     setPSymbols(prog, gs)
-
-    for ((v, used) <- varUsage if !used) {
-      warning("Variable " + v.name + " is declared but never used.", v)
-    }
 
     prog
   }
