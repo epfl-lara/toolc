@@ -20,6 +20,8 @@ object Symbols {
       case Some(s) => s
       case None => sys.error("Accessing undefined symbol.")
     }
+
+    def optSymbol = _sym
   }
 
   private object UniqueCounters {
