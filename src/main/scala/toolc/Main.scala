@@ -37,6 +37,9 @@ object Main {
         ctx = ctx.copy(printTree = true)
         processOption(args)
 
+      case "--symbols" :: args =>
+        ctx = ctx.copy(printSymbols = true)
+
       case "-d" :: out :: args =>
         ctx = ctx.copy(outDir = Some(new File(out)))
         processOption(args)
@@ -63,14 +66,16 @@ object Main {
   }
 
   def displayHelp() {
-    println("Usage: ./toolc [options] <file>")
-    println("Options include:")
-    println(" --help        displays this help")
-    println(" --tokens      displays the list of tokens")
-    println(" --tree        displays the parsed tree")
-    println(" --eval        evaluate the program directly instead of generating code")
-    println(" --main        displays the name of the main object and exits")
-    println(" -d <outdir>   generates class files in the specified directory")
+    val msg = """|Usage: ./toolc [options] <file>
+                 |Options include:
+                 |  --help        displays this help
+                 |  --tokens      displays the list of tokens
+                 |  --tree        displays the parsed tree
+                 |  --symbols     displays the parsed tree after symbol analysis
+                 |  --eval        evaluate the program directly instead of generating code
+                 |  --main        displays the name of the main object and exits
+                 |  -d <outdir>   generates class files in the specified directory"""
+    println(msg.stripMargin)
   }
 
 
@@ -85,7 +90,9 @@ object Main {
         (if (ctx.doPrintMain) {
           DisplayMain
         } else if (ctx.printTree) {
-          PrintingPhase
+          new PrintingPhase(false)
+        } else if (ctx.printSymbols) {
+          NameAnalysis andThen new PrintingPhase(true)
         } else {
           NameAnalysis andThen
           TypeChecking andThen

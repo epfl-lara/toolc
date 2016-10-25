@@ -11,5 +11,6 @@ case class Context(
   val doHelp: Boolean = false,
   val doPrintMain: Boolean = false,
   val doTokens: Boolean = false,
-  val printTree: Boolean = false
+  val printTree: Boolean = false,
+  val printSymbols: Boolean = false
 )

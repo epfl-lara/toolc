@@ -4,8 +4,8 @@ package ast
 import Trees.Program
 import toolc.utils.{Context, Pipeline}
 
-object PrintingPhase extends Pipeline[Program, Unit] {
+class PrintingPhase(unique: Boolean) extends Pipeline[Program, Unit] {
   override def run(ctx: Context)(v: Program): Unit = {
-    println(Printer(v))
+    println(Printer(v, unique))
   }
 }
