@@ -3,7 +3,6 @@ package analyzer
 
 import ast.Trees._
 
-import Symbols._
 import Types._
 import utils._
 
@@ -23,73 +22,52 @@ object TypeChecking extends Pipeline[Program, Program] {
       tcExpr(meth.retExpr, retType)
     }
 
-    /** Computes the type of an expression. If expectedTps is not empty, checks that
-     * the expression is a subtype of the ones in expectedTps. If it's not, prints an
-     * error message and returns the error type. */
-    def tcExpr(expr: ExprTree, expectedTps: Type*): Type = {
-      val actualType: Type = expr match {
+    /** Checks that the expression is a subtype of the ones in expectedTps.
+      * If it's not, prints an error message and returns the error type.
+      * Also adds missing symbols to methods in MethodCalls and imposes extra restrictions as needed.
+      */
+    def tcExpr(expr: ExprTree, expectedTps: Type*): Unit = {
+      expr match {
         case And(lhs, rhs) =>
           tcExpr(lhs, TBoolean)
           tcExpr(rhs, TBoolean)
-          TBoolean
         case Or(lhs, rhs) =>
           tcExpr(lhs, TBoolean)
           tcExpr(rhs, TBoolean)
-          TBoolean
         case Plus(lhs, rhs) =>
-          val tLeft = tcExpr(lhs, TInt, TString)
-          val tRight = tcExpr(rhs, TInt, TString)
-          
-          (tLeft,tRight) match {
-            case (TInt,TInt) => TInt
-            case (TString,TInt) => TString
-            case (TInt,TString) => TString
-            case (TString,TString) => TString
-            case _ => TError
-          }
-       
+          tcExpr(lhs, TInt, TString)
+          tcExpr(rhs, TInt, TString)
         case Minus(lhs, rhs) =>
           tcExpr(lhs, TInt)
           tcExpr(rhs, TInt)
-          TInt
         case Times(lhs, rhs) =>
           tcExpr(lhs, TInt)
           tcExpr(rhs, TInt)
-          TInt
         case Div(lhs, rhs) =>
           tcExpr(lhs, TInt)
           tcExpr(rhs, TInt)
-          TInt
         case LessThan(lhs, rhs) =>
           tcExpr(lhs, TInt)
           tcExpr(rhs, TInt)
-          TBoolean
         case Equals(lhs, rhs) =>
-          val tLeft = tcExpr(lhs, TInt, TBoolean, TString, TIntArray, TObject)
-          val tRight = tcExpr(rhs, TInt, TBoolean, TString, TIntArray, TObject)
-          
-          (tLeft,tRight) match {
-            case (TInt,TInt) => TBoolean
-            case (TBoolean,TBoolean) => TBoolean
-            case (TString,TString) => TBoolean
-            case (TIntArray,TIntArray) => TBoolean
-            case (t1 @ TClass(_), t2 @ TClass(_)) /* if(t1.isSubTypeOf(t2) || t2.isSubTypeOf(t1)) */ => TBoolean
-            case (t1 @ _, t2 @ _) =>
+          tcExpr(lhs, TInt, TBoolean, TString, TIntArray, TObject)
+          tcExpr(rhs, TInt, TBoolean, TString, TIntArray, TObject)
+          (lhs.getType, rhs.getType) match {
+            case (TClass(_), TClass(_)) =>
+            case (t1, t2) if t1 == t2 =>
+            case (t1, t2) =>
               error(s"Incompatible types in equality: $t1, $t2", expr)
-              TError
           }
         case ArrayRead(arr, index) =>
           tcExpr(arr, TIntArray)
           tcExpr(index, TInt)
-          TInt
         case ArrayLength(arr) =>
           tcExpr(arr, TIntArray)
-          TInt
         case MethodCall(obj, meth, args) =>
           // Finally we check these method calls!
-          val objType = tcExpr(obj, TObject)
+          tcExpr(obj, TObject)
           
-          objType match {
+          obj.getType match {
             case TClass(os) =>
               os.lookupMethod(meth.value) match {
                 case Some(mSym) =>
@@ -103,50 +81,27 @@ object TypeChecking extends Pipeline[Program, Program] {
                       case (expr, tpe) => tcExpr(expr, tpe)
                     }
                   }
-                  mSym.getType // better than error type.
                 case None =>
-                  error("Method " + meth.value + " does not exist in class " + os.name, meth); TError
+                  error("Method " + meth.value + " does not exist in class " + os.name, meth)
               }
-            case TError =>
-              TError // so as to not multiply useless method calls
-            case other @ _ =>
+            case other =>
               error(s"Method call should be applied to an object type, found: $other", expr)
-              TError
           }
-          
-        case IntLit(value) => TInt
-        case StringLit(value) => TString
-        case True() => TBoolean
-        case False() => TBoolean
-        case Variable(id) => id.getType
-        case t @ This() => TClass(t.getSymbol)
+
         case NewIntArray(size) =>
           tcExpr(size,TInt)
-          TIntArray
 
-        case New(tpe) =>
-          tpe.getSymbol match {
-            case cs: ClassSymbol =>
-              TClass(cs)
-            case _ =>
-              error("Expected: class name, found: " + tpe, tpe)
-              TUntyped
-          }
-        
         case Not(expr) =>
           tcExpr(expr, TBoolean)
-          TBoolean
+
+        case _ =>
+          // do nothing
       }
 
-      val tpe = if(expectedTps.isEmpty || expectedTps.exists(e => actualType.isSubTypeOf(e)) ) {
-        actualType
-      } else {
-        error("Type error: Expected: " + expectedTps.mkString(" or ") + s", found: $actualType", expr)
-        expectedTps.head
+      if (!expectedTps.toList.exists(expr.getType.isSubTypeOf)) {
+        error("Type error: Expected: " + expectedTps.mkString(" or ") + s", found: ${expr.getType}", expr)
       }
 
-      expr.setType(tpe)
-      tpe
     }
     
     def tcStat(stat: StatTree): Unit = stat match {
@@ -168,7 +123,7 @@ object TypeChecking extends Pipeline[Program, Program] {
         tcExpr(index, TInt)
         tcExpr(expr, TInt)
       case DoExpr(expr) =>
-        tcExpr(expr)
+        tcExpr(expr, TInt, TBoolean, TString, TIntArray, TObject)
     }
 
     prog.main.stats.foreach(tcStat)
