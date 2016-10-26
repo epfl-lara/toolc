@@ -9,7 +9,6 @@ case class Context(
   val outDir: Option[File] = None,
   val doEval: Boolean = false,
   val doHelp: Boolean = false,
-  val doPrintMain: Boolean = false,
   val doTokens: Boolean = false,
   val printTree: Boolean = false,
   val printSymbols: Boolean = false

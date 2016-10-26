@@ -21,10 +21,6 @@ object Main {
         ctx = ctx.copy(doHelp = true)
         processOption(args)
 
-      case "--main" :: args =>
-        ctx = ctx.copy(doPrintMain = true)
-        processOption(args)
-
       case "--eval" :: args =>
         ctx = ctx.copy(doEval = true)
         processOption(args)
@@ -73,7 +69,6 @@ object Main {
                  |  --tree        displays the parsed tree
                  |  --symbols     displays the parsed tree after symbol analysis
                  |  --eval        evaluate the program directly instead of generating code
-                 |  --main        displays the name of the main object and exits
                  |  -d <outdir>   generates class files in the specified directory"""
     println(msg.stripMargin)
   }
@@ -87,12 +82,10 @@ object Main {
     } else {
       Lexer andThen
       Parser andThen
-        (if (ctx.doPrintMain) {
-          DisplayMain
-        } else if (ctx.printTree) {
-          new PrintingPhase(false)
+        (if (ctx.printTree) {
+          new PrintTree(false)
         } else if (ctx.printSymbols) {
-          NameAnalysis andThen new PrintingPhase(true)
+          NameAnalysis andThen new PrintTree(true)
         } else {
           NameAnalysis andThen
           TypeChecking andThen
