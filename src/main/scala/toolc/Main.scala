@@ -4,10 +4,11 @@ import utils._
 import java.io.File
 
 import lexer._
-import ast._
 import analyzer._
 import code._
 import eval._
+import parser._
+import ast.PrintTree
 
 object Main {
 
@@ -35,6 +36,7 @@ object Main {
 
       case "--symbols" :: args =>
         ctx = ctx.copy(printSymbols = true)
+        processOption(args)
 
       case "-d" :: out :: args =>
         ctx = ctx.copy(outDir = Some(new File(out)))
@@ -55,7 +57,7 @@ object Main {
     }
 
     if (ctx.files.size != 1) {
-      reporter.fatal("Exactly one file expected, "+ctx.files.size+" file(s) given.")
+      reporter.fatal(s"Exactly one file expected, ${ctx.files.size} file(s) given.")
     }
 
     ctx

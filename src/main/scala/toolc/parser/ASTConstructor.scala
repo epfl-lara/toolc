@@ -1,5 +1,5 @@
 package toolc
-package ast
+package parser
 
 import ast.Trees._
 import lexer.Token

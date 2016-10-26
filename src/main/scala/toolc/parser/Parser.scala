@@ -1,8 +1,8 @@
 package toolc
-package ast
+package parser
 
 import utils._
-import Trees._
+import ast.Trees._
 import lexer._
 import lexer.Tokens._
 import grammarcomp.grammar._
@@ -137,36 +137,6 @@ object Parser extends Pipeline[Iterator[Token], Program] {
       case fdb =>
         fatal("Parsing failed: "+fdb)
     }
-  }
-
-  /**
-   * A helper method that uses reflection to compare AST trees.
-   * Used in testing.
-   */
-  def compareASTs(t1: Tree, t2: Tree): Unit = {
-    if (t1.getClass == t2.getClass) {
-      val declClass = t1.getClass
-      val flds = declClass.getDeclaredFields
-      flds.foreach(_.setAccessible(true))
-      if (flds.isEmpty)
-        println("Didnt find any field with public modifier:" + declClass.getDeclaredFields.map(_.getName()))
-      flds.foreach { field =>
-        val f1 = field.get(t1)
-        val f2 = field.get(t2)
-        f1 match {
-          case t11: Tree =>
-            compareASTs(t11, f2.asInstanceOf[Tree])
-          case trees: List[Tree] =>
-            (trees zip f2.asInstanceOf[List[Tree]]).foreach {
-              case (x, y) => compareASTs(x, y)
-            }
-          case _ =>
-        }
-        /*if (f1 != f2)
-          throw new Exception(s"Reference AST was different at the children: ${(f1, f2)}")*/
-      }
-    } else
-      throw new Exception(s"AST: $t1 RefAST: $t2")
   }
 
 }

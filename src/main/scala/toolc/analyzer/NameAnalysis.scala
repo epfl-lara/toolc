@@ -20,7 +20,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
       val mcSym = new MainSymbol(prog.main.id.value).setPos(prog.main)
       global.mainClass = mcSym
-      prog.main.id.setSymbol(mcSym)
+      prog.main.setSymbol(mcSym)
 
       // We first create empty symbols for all classes, checking also that they
       // are defined only once.
@@ -40,7 +40,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
         }
 
         val classSym = new ClassSymbol(name).setPos(c)
-        c.id.setSymbol(classSym)
+        c.setSymbol(classSym)
         global.classes += (name -> classSym)
       }
 
@@ -120,7 +120,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
               case None =>
                 val varSym = new VariableSymbol(varName).setPos(varDecl)
-                varDecl.id.setSymbol(varSym)
+                varDecl.setSymbol(varSym)
                 classSym.members += (varName -> varSym)
             }
           }
@@ -131,7 +131,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
         def collectInMethod(m: MethodDecl): Unit = {
           val methName = m.id.value
           val methSym = new MethodSymbol(methName, classSym).setPos(m)
-          m.id.setSymbol(methSym)
+          m.setSymbol(methSym)
 
           classSym.methods.get(methName) match {
             case Some(prev) =>
@@ -158,7 +158,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
               case None =>
                 val parSym = new VariableSymbol(parName).setPos(formal.id)
-                formal.id.setSymbol(parSym)
+                formal.setSymbol(parSym)
                 methSym.params += (parName -> parSym)
                 methSym.argList = methSym.argList ::: (parSym :: Nil)
             }
@@ -177,7 +177,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
                   case None =>
                     val varSym = new VariableSymbol(varName).setPos(varDecl.id)
-                    varDecl.id.setSymbol(varSym)
+                    varDecl.setSymbol(varSym)
                     methSym.members += (varName -> varSym)
                 }
             }

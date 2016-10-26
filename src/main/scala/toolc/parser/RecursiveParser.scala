@@ -1,8 +1,8 @@
 package toolc
-package ast
+package parser
 
 import utils._
-import Trees._
+import ast.Trees._
 import lexer._
 import lexer.Tokens._
 

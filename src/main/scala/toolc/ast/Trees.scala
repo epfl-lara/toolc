@@ -34,7 +34,10 @@ object Trees {
   sealed trait DefTree[S <: Symbol] extends Tree with Symbolic[S] {
     val id: Identifier
     override def getSymbol = id.getSymbol.asInstanceOf[S]
-    override def setSymbol(s: S) = sys.error("Cannot set symbol of a definition!")
+    override def setSymbol(s: S) = {
+      id.setSymbol(s)
+      this
+    }
     override def optSymbol = id.optSymbol.asInstanceOf[Option[S]]
   }
   case class MainObject(id: Identifier, stats: List[StatTree])
