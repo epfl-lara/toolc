@@ -43,8 +43,8 @@ class ASTConstructor {
   def constructVarDecl(ptree: NodeOrLeaf[Token]): VarDecl = ptree match {
     case Node('VarDeclaration ::= _, List(Leaf(vr), param, _)) =>
       // Use the parser for parameters which we already have
-      val Formal(tpe, id) = constructParam(param)
-      VarDecl(tpe, id).setPos(vr)
+      val Formal(id, tpe) = constructParam(param)
+      VarDecl(id, tpe).setPos(vr)
   }
 
   def constructMethodDecl(ptree: NodeOrLeaf[Token]): MethodDecl = ptree match {
@@ -63,7 +63,7 @@ class ASTConstructor {
     ptree match {
       case Node('Param ::= _, List(id, _, tpe)) =>
         val pid = constructId(id)
-        Formal(constructType(tpe), pid).setPos(pid)
+        Formal(pid, constructType(tpe)).setPos(pid)
     }
   }
 

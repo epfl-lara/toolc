@@ -111,14 +111,14 @@ object RecursiveParser extends Pipeline[Iterator[Token], Program] {
         eat(COLON())
         val tpe = parseType
 
-        var lst: List[Formal] = Formal(tpe, id) :: Nil
+        var lst: List[Formal] = Formal(id, tpe) :: Nil
 
         while(currentToken == COMMA()) {
           readToken()
           val id2 = parseIdentifier
           eat(COLON())
           val tpe2 = parseType
-          lst = Formal(tpe2, id2) :: lst
+          lst = Formal(id2, tpe2) :: lst
         }
         lst.reverse
       }
@@ -138,7 +138,7 @@ object RecursiveParser extends Pipeline[Iterator[Token], Program] {
       eat(COLON())
       val tpe = parseType
       eat(SEMICOLON())
-      VarDecl(tpe, id).setPos(id)
+      VarDecl(id, tpe).setPos(id)
     }
 
     def parseType: TypeTree = currentToken match {

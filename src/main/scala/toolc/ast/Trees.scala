@@ -41,7 +41,7 @@ object Trees {
     extends DefTree[MainSymbol]
   case class ClassDecl(id: Identifier, parent: Option[Identifier], vars: List[VarDecl], methods: List[MethodDecl])
     extends DefTree[ClassSymbol]
-  case class VarDecl(tpe: TypeTree, id: Identifier)
+  case class VarDecl(id: Identifier, tpe: TypeTree)
     extends DefTree[VariableSymbol]
   case class MethodDecl(id: Identifier,
                         args: List[Formal],
@@ -50,7 +50,7 @@ object Trees {
                         stats: List[StatTree],
                         retExpr: ExprTree)
     extends DefTree[MethodSymbol]
-  sealed case class Formal(tpe: TypeTree, id: Identifier)
+  sealed case class Formal(id: Identifier, tpe: TypeTree)
     extends DefTree[VariableSymbol]
 
   // Types

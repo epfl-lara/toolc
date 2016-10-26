@@ -83,7 +83,7 @@ object Printer {
           "}",
           ""
         )
-      case VarDecl(tpe, id) =>
+      case VarDecl(id, tpe) =>
         s"var " <:> rec(id) <:> ": " <:> rec(tpe) <:> ";"
       case MethodDecl(id, args, retType, vars, stats, retExpr) =>
         Stacked(
@@ -96,7 +96,7 @@ object Printer {
           "}",
           ""
         )
-      case Formal(tpe, id) =>
+      case Formal(id, tpe) =>
         rec(id) <:> ": " <:> rec(tpe)
 
       case IntArrayType() => "Int[]"
