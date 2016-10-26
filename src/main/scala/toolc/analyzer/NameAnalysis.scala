@@ -18,7 +18,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
         error("The main object cannot be named Object.", prog.main.id)
       }
 
-      val mcSym = new MainSymbol(prog.main.id.value)
+      val mcSym = new MainSymbol(prog.main.id.value).setPos(prog.main)
       global.mainClass = mcSym
       prog.main.setSymbol(mcSym)
       prog.main.id.setSymbol(mcSym)
