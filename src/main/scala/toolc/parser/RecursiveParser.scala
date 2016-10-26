@@ -352,11 +352,11 @@ object RecursiveParser extends Pipeline[Iterator[Token], Program] {
 
     def parseExpr1: ExprTree = currentToken match {
       case TRUE() =>
-        val ret = True().setPos(currentToken)
+        val ret = BooleanLiteral(true).setPos(currentToken)
         readToken()
         ret
       case FALSE() =>
-        val ret = False().setPos(currentToken)
+        val ret = BooleanLiteral(false).setPos(currentToken)
         readToken()
         ret
       case THIS() =>

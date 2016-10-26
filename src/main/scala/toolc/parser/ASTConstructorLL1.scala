@@ -48,8 +48,8 @@ class ASTConstructorLL1 extends ASTConstructor {
         ((t: @unchecked) match {
           case INTLIT(intval)  => IntLit(intval)
           case STRINGLIT(name) => StringLit(name)
-          case TRUE()          => True()
-          case FALSE()         => False()
+          case TRUE()          => BooleanLiteral(true)
+          case FALSE()         => BooleanLiteral(false)
           case THIS()          => This()
         }).setPos(t)
       case Node('SimpleAtom ::= _, List(id)) =>

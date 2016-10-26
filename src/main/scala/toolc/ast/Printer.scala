@@ -165,10 +165,8 @@ object Printer {
         '"' + value + '"'
       case Variable(id) =>
         rec(id)
-      case True() =>
-        "true"
-      case False() =>
-        "false"
+      case BooleanLiteral(value) =>
+        value.toString
       case This() =>
         "this"
       case NewIntArray(size) =>

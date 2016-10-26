@@ -158,10 +158,7 @@ object Trees {
   case class StringLit(value: String) extends ExprTree {
     val getType = TString
   }
-  case class True() extends ExprTree {
-    val getType = TBoolean
-  }
-  case class False() extends ExprTree {
+  case class BooleanLiteral(value: Boolean) extends ExprTree {
     val getType = TBoolean
   }
   // Variables

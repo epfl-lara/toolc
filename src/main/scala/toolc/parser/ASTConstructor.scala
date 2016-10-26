@@ -154,9 +154,9 @@ class ASTConstructor {
       case Node('Expression ::= List(STRINGLITSENT), List(Leaf(st@STRINGLIT(s)))) =>
         StringLit(s).setPos(st)
       case Node('Expression ::= _, List(Leaf(tt@TRUE()))) =>
-        True().setPos(tt)
+        BooleanLiteral(true).setPos(tt)
       case Node('Expression ::= _, List(Leaf(tf@FALSE()))) =>
-        False().setPos(tf)
+        BooleanLiteral(false).setPos(tf)
       case Node('Expression ::= List('Identifier), List(id)) =>
         val pid = constructId(id)
         Variable(pid).setPos(pid)

@@ -78,8 +78,7 @@ class Evaluator(ctx: Context, prog: Program) {
 
     case IntLit(value) => IntValue(value)
     case StringLit(value) => StringValue(value)
-    case True() => BoolValue(true)
-    case False() => BoolValue(false)
+    case BooleanLiteral(value) => BoolValue(value)
     case Equals(lhs, rhs) =>
       val lv = evalExpr(lhs)
       val rv = evalExpr(rhs)
