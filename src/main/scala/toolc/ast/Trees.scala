@@ -27,25 +27,31 @@ object Trees {
     override def toString = value
   }
 
+  // Top-level program class
+  case class Program(main: MainObject, classes: List[ClassDecl]) extends Tree
+
   // Definitions
-  sealed trait DefTree extends Tree
-  case class Program(main: MainObject, classes: List[ClassDecl])
-    extends DefTree
+  sealed trait DefTree[S <: Symbol] extends Tree with Symbolic[S] {
+    val id: Identifier
+    override def getSymbol = id.getSymbol.asInstanceOf[S]
+    override def setSymbol(s: S) = sys.error("Cannot set symbol of a definition!")
+    override def optSymbol = id.optSymbol.asInstanceOf[Option[S]]
+  }
   case class MainObject(id: Identifier, stats: List[StatTree])
-    extends DefTree with Symbolic[MainSymbol]
+    extends DefTree[MainSymbol]
   case class ClassDecl(id: Identifier, parent: Option[Identifier], vars: List[VarDecl], methods: List[MethodDecl])
-    extends DefTree with Symbolic[ClassSymbol]
+    extends DefTree[ClassSymbol]
   case class VarDecl(tpe: TypeTree, id: Identifier)
-    extends DefTree with Symbolic[VariableSymbol]
+    extends DefTree[VariableSymbol]
   case class MethodDecl(id: Identifier,
                         args: List[Formal],
                         retType: TypeTree,
                         vars: List[VarDecl],
                         stats: List[StatTree],
                         retExpr: ExprTree)
-    extends DefTree with Symbolic[MethodSymbol]
+    extends DefTree[MethodSymbol]
   sealed case class Formal(tpe: TypeTree, id: Identifier)
-    extends DefTree with Symbolic[VariableSymbol]
+    extends DefTree[VariableSymbol]
 
   // Types
   sealed trait TypeTree extends Tree with Typed

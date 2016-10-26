@@ -20,7 +20,6 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
       val mcSym = new MainSymbol(prog.main.id.value).setPos(prog.main)
       global.mainClass = mcSym
-      prog.main.setSymbol(mcSym)
       prog.main.id.setSymbol(mcSym)
 
       // We first create empty symbols for all classes, checking also that they
@@ -41,7 +40,6 @@ object NameAnalysis extends Pipeline[Program, Program] {
         }
 
         val classSym = new ClassSymbol(name).setPos(c)
-        c.setSymbol(classSym)
         c.id.setSymbol(classSym)
         global.classes += (name -> classSym)
       }
@@ -122,7 +120,6 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
               case None =>
                 val varSym = new VariableSymbol(varName).setPos(varDecl)
-                varDecl.setSymbol(varSym)
                 varDecl.id.setSymbol(varSym)
                 classSym.members += (varName -> varSym)
             }
@@ -134,7 +131,6 @@ object NameAnalysis extends Pipeline[Program, Program] {
         def collectInMethod(m: MethodDecl): Unit = {
           val methName = m.id.value
           val methSym = new MethodSymbol(methName, classSym).setPos(m)
-          m.setSymbol(methSym)
           m.id.setSymbol(methSym)
 
           classSym.methods.get(methName) match {
@@ -162,7 +158,6 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
               case None =>
                 val parSym = new VariableSymbol(parName).setPos(formal.id)
-                formal.setSymbol(parSym)
                 formal.id.setSymbol(parSym)
                 methSym.params += (parName -> parSym)
                 methSym.argList = methSym.argList ::: (parSym :: Nil)
@@ -183,7 +178,6 @@ object NameAnalysis extends Pipeline[Program, Program] {
                   case None =>
                     val varSym = new VariableSymbol(varName).setPos(varDecl.id)
                     varDecl.id.setSymbol(varSym)
-                    varDecl.setSymbol(varSym)
                     methSym.members += (varName -> varSym)
                 }
             }
@@ -229,11 +223,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
       for (varDecl <- klass.vars) {
         setTypeSymbol(varDecl.tpe, gs)
-
-        varDecl.id.getSymbol match {
-          case vs: VariableSymbol => vs.setType(varDecl.tpe.getType)
-          case _ => fatal("Class member has a non-variable symbol attached.")
-        }
+        varDecl.getSymbol.setType(varDecl.tpe.getType)
       }
 
       klass.methods.foreach(setMSymbols(_, gs, classSym))
@@ -248,7 +238,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
       for (formal <- meth.args) {
         setTypeSymbol(formal.tpe, gs)
 
-        formal.id.getSymbol match {
+        formal.getSymbol match {
           case vs: VariableSymbol => vs.setType(formal.tpe.getType)
           case _ => fatal("Method parameter has a non-variable symbol attached.")
         }
@@ -256,10 +246,7 @@ object NameAnalysis extends Pipeline[Program, Program] {
 
       for (varDecl <- meth.vars) {
         setTypeSymbol(varDecl.tpe, gs)
-        varDecl.id.getSymbol match {
-          case vs: VariableSymbol => vs.setType(varDecl.tpe.getType)
-          case _ => fatal("Method local has a non-variable symbol attached.")
-        }
+        varDecl.getSymbol.setType(varDecl.tpe.getType)
       }
 
       // We check whether the method is overriding another one...

@@ -53,7 +53,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
       // Maps each argument to one local variable index position
       val argMappings = mt.args.zipWithIndex.map { case (arg, index) =>
-        arg.id.getSymbol.name -> (index + 1)
+        arg.getSymbol.name -> (index + 1)
       }.toMap
 
       // Maps each variable to one local variable index position
