@@ -5,16 +5,11 @@ import Symbols._
 
 object Types {
   trait Typed {
-    self =>
-    
-    private var _tpe: Type = TUntyped
-    
-    def setType(tpe: Type): self.type = { _tpe = tpe; this }
-    def getType: Type = _tpe
+    def getType: Type
   }
   
   sealed abstract class Type {
-    def isSubTypeOf(tpe: Type): Boolean
+    def isSubTypeOf(tpe: Type): Boolean = tpe == this
   }
   
   case object TError extends Type {
@@ -28,25 +23,18 @@ object Types {
   }
   
   case object TInt extends Type {
-    override def isSubTypeOf(tpe: Type): Boolean = tpe == this
     override def toString = "Int"
   }
   
   case object TBoolean extends Type {
-    override def isSubTypeOf(tpe: Type): Boolean = tpe == this
     override def toString = "Bool"
   }
   
   case object TString extends Type {
-    override def isSubTypeOf(tpe: Type): Boolean = tpe == this
     override def toString = "String"
   }
   
   case object TIntArray extends Type {
-    override def isSubTypeOf(tpe: Type): Boolean = tpe match {
-      case TIntArray => true
-      case _ => false
-    }
     override def toString = "Int[]"
   }
   

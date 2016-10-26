@@ -37,6 +37,10 @@ object Symbols {
   sealed abstract class Symbol extends Positioned with Typed {
     val id: Int = UniqueCounters.next
     val name: String
+
+    private var tpe_ : Type = TUntyped
+    def getType = tpe_
+    def setType(tpe: Type) = tpe_ = tpe
   }
 
   /** The global scope contains symbols of the main object and classes */
@@ -50,6 +54,9 @@ object Symbols {
   class MainSymbol(val name: String) extends Symbol
 
   class ClassSymbol(val name: String) extends Symbol {
+    override def getType = TClass(this)
+    override def setType(t: Type) = sys.error("Cannot set the symbol of a ClassSymbol")
+
     var parent: Option[ClassSymbol] = None
     var methods = Map[String,MethodSymbol]()
     var members = Map[String,VariableSymbol]()
