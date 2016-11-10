@@ -39,6 +39,7 @@ object Main {
 
       case "--symbols" :: args =>
         ctx = ctx.copy(printSymbols = true)
+        processOption(args)
 
       case "-d" :: out :: args =>
         ctx = ctx.copy(outDir = Some(new File(out)))
