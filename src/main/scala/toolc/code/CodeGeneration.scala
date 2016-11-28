@@ -10,14 +10,15 @@ import ByteCodes._
 import utils._
 
 object CodeGeneration extends Pipeline[Program, Unit] {
-  // Bytecodes
+
+  // A mapping from a parameter/local variable name to the index of this parameter/variable
+  // in the fields of a method
   type LocalsPosMapping = Map[String,Int]
 
   def run(ctx: Context)(prog: Program): Unit = {
     import ctx.reporter._
 
-    /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
-    def generateClassFile(shortFileName: String, ct: ClassDecl, dir: String): Unit = {
+    def generateClassFile(ct: ClassDecl, shortFileName: String, outDir: String): Unit = {
       val cs = ct.getSymbol
       val cf = new ClassFile(cs.name, cs.parent.map(_.name))
       cf.setSourceFile(shortFileName)
@@ -37,16 +38,34 @@ object CodeGeneration extends Pipeline[Program, Unit] {
         cGenMethod(ch, methDecl)
       })
 
+      writeClassFile(cf, outDir, cs.name)
+    }
+
+    def generateMainClassFile(main: MainObject, sourceFileName: String, outDir: String): Unit = {
+      // Main class has a special handling
+      val cs = main.getSymbol
+      val mainClassFile = new cafebabe.ClassFile(cs.name, None)
+      mainClassFile.setSourceFile(sourceFileName)
+      mainClassFile.addDefaultConstructor
+
+      // Now do the main object
+      cGenMain(
+        mainClassFile.addMainMethod.codeHandler,
+        prog.main.stats,
+        cs.name
+      )
+
+      writeClassFile(mainClassFile, outDir, cs.name)
+    }
+
+    /** Writes the proper .class file in a given directory. An empty string for dir is equivalent to "./". */
+    def writeClassFile(cf: ClassFile, dir: String, className: String) = {
       try {
-        cf.writeToFile(dir + cs.name + ".class")
+        cf.writeToFile(dir + className + ".class")
       } catch {
         case e: Exception => fatal(e.getMessage)
       }
     }
-
-    // a mapping from variable symbols to positions in the local variables
-    // of the stack frame
-
 
     def cGenMethod(ch: CodeHandler, mt: MethodDecl): Unit = {
       val methSym = mt.getSymbol
@@ -360,7 +379,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       case _ => sys.error("Trying to get a descriptor for type: " + t)
     }
 
-    val shortName = ctx.files.head.getName
+    val sourceName = ctx.files.head.getName
 
     val outDir = ctx.outDir.map(_.getPath+"/").getOrElse("./")
 
@@ -369,29 +388,13 @@ object CodeGeneration extends Pipeline[Program, Unit] {
       f.mkdir()
     }
 
-    // output code
+    // output class code
     prog.classes foreach {
-      generateClassFile(shortName, _, outDir)
+      generateClassFile(_, sourceName, outDir)
     }
 
-    // Main class has a special handling
-    val cs = prog.main.getSymbol
-    val mainClassFile = new cafebabe.ClassFile(cs.name, None)
-    mainClassFile.setSourceFile(shortName)
-    mainClassFile.addDefaultConstructor
-
-    // Now do the main object
-    cGenMain(
-      mainClassFile.addMainMethod.codeHandler,
-      prog.main.stats,
-      cs.name
-    )
-
-    try {
-      mainClassFile.writeToFile(outDir + cs.name + ".class")
-    } catch {
-      case e: Exception => fatal(e.getMessage)
-    }
+    // output main object code
+    generateMainClassFile(prog.main, sourceName, outDir)
 
   }
 
