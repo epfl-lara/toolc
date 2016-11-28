@@ -92,7 +92,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
 
     // Generates code for a statement
     def cGenStat(statement: StatTree)
-              (implicit ch: CodeHandler, mapping: LocalsPosMapping, cname: String): Unit = {
+                (implicit ch: CodeHandler, mapping: LocalsPosMapping, cname: String): Unit = {
       statement match {
         case Block(stats) =>
           stats foreach cGenStat
@@ -188,7 +188,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
      * Generates code for an expression
      */
     def cGenExpr(expr: ExprTree)
-              (implicit ch: CodeHandler, mapping: LocalsPosMapping, cname: String): Unit = {
+                (implicit ch: CodeHandler, mapping: LocalsPosMapping, cname: String): Unit = {
       expr match {
         case And(lhs,rhs) =>
           ch << ICONST_0
@@ -230,7 +230,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
               }
 
               ch << LineNumber(p.line)
-              ch << InvokeVirtual("java/lang/StringBuilder","append",lhsCallingType)
+              ch << InvokeVirtual("java/lang/StringBuilder", "append", lhsCallingType)
 
               cGenExpr(rhs)
               val rhsCallingType = rhs.getType match {
@@ -239,21 +239,21 @@ object CodeGeneration extends Pipeline[Program, Unit] {
               }
 
               ch << LineNumber(p.line)
-              ch << InvokeVirtual("java/lang/StringBuilder","append",rhsCallingType)
+              ch << InvokeVirtual("java/lang/StringBuilder", "append", rhsCallingType)
 
               // Finally, output string
-              ch << InvokeVirtual("java/lang/StringBuilder","toString","()Ljava/lang/String;")
+              ch << InvokeVirtual("java/lang/StringBuilder", "toString", "()Ljava/lang/String;")
           }
-        case m @ Minus(lhs,rhs) => genBinop(lhs,rhs,ISUB,m)
-        case t @ Times(lhs,rhs) => genBinop(lhs,rhs,IMUL,t)
-        case d @ Div(lhs,rhs) => genBinop(lhs,rhs,IDIV,d)
-        case lt @ LessThan(lhs,rhs) =>
+        case m @ Minus(lhs, rhs) => genBinop(lhs, rhs, ISUB, m)
+        case t @ Times(lhs, rhs) => genBinop(lhs, rhs, IMUL, t)
+        case d @ Div(lhs, rhs) => genBinop(lhs, rhs, IDIV, d)
+        case lt @ LessThan(lhs, rhs) =>
           val trueLabel = ch.getFreshLabel("ltrue")
-          genComp(lhs,rhs,If_ICmpLt(trueLabel),trueLabel)
+          genComp(lhs, rhs, If_ICmpLt(trueLabel), trueLabel)
 
-        case e @ Equals(lhs,rhs) =>
+        case e @ Equals(lhs, rhs) =>
           val trueLabel = ch.getFreshLabel("ltrue")
-          val theBytecode = (lhs.getType,rhs.getType) match {
+          val theBytecode = (lhs.getType, rhs.getType) match {
             case (TInt,TInt) | (TBoolean,TBoolean) => If_ICmpEq(trueLabel)
             case _ =>
               If_ACmpEq(trueLabel) // Everything else compares by referenc.
@@ -280,10 +280,13 @@ object CodeGeneration extends Pipeline[Program, Unit] {
           val className = msym.classSymbol.name
 
           ch << LineNumber(mc.line)
-          ch << InvokeVirtual(className,meth.value,
-                  // Now the type of the invoked method
-                  msym.argList.map(arg => typeToDescr(arg.getType)).mkString("(","",")") +
-                  typeToDescr(meth.getSymbol.asInstanceOf[MethodSymbol].getType))
+          ch << InvokeVirtual(
+            className,
+            meth.value,
+            // Now the type of the invoked method
+            msym.argList.map(arg => typeToDescr(arg.getType)).mkString("(","",")") +
+              typeToDescr(meth.getSymbol.asInstanceOf[MethodSymbol].getType)
+          )
 
         case nl @ IntLit(value) => ch << LineNumber(nl.line) << Ldc(value)
         case sl @ StringLit(value) => ch << LineNumber(sl.line) << Ldc(value)
@@ -299,10 +302,9 @@ object CodeGeneration extends Pipeline[Program, Unit] {
                 }
                 case None =>
                   // Not a local variable but a field
-                      ch << LineNumber(id.line)
+                  ch << LineNumber(id.line)
                   ch << ALoad(0) // this
-                  ch << GetField(cname,vsym.name,
-                         typeToDescr(vsym.getType))
+                  ch << GetField(cname, vsym.name, typeToDescr(vsym.getType))
             }
             case other => sys.error("Expected variable symbol but got " + other)
           }
@@ -337,9 +339,7 @@ object CodeGeneration extends Pipeline[Program, Unit] {
         ch << op
       }
 
-      def genComp(lhs: ExprTree, rhs: ExprTree,
-            branchInst: AbstractByteCode, trueLabel: String) = {
-
+      def genComp(lhs: ExprTree, rhs: ExprTree, branchInst: AbstractByteCode, trueLabel: String) = {
         ch << ICONST_1 // The true value, for use later
         cGenExpr(lhs)
         cGenExpr(rhs)
@@ -383,7 +383,8 @@ object CodeGeneration extends Pipeline[Program, Unit] {
     // Now do the main object
     cGenMain(
       mainClassFile.addMainMethod.codeHandler,
-      prog.main.stats,cs.name
+      prog.main.stats,
+      cs.name
     )
 
     try {
